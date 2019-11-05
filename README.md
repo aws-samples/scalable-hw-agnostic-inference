@@ -43,7 +43,7 @@ export EKSCTL_EXPERIMENTAL=true
 eksctl enable profile -r `{{.Region}}` --with-helm=false \
 --git-url git@github.com:yahavb/weave-workshop.git \
 --git-email email@me.com --cluster {{.ClusterName}} \
-git@github.com:yahavb/game-server-gitops-profile.git 
+git@github.com:aws-samples/amazon-eks-profile-for-gameserver.git
 ```
 
 ## How to access workloads
