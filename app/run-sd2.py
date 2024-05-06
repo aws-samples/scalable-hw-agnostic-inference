@@ -80,7 +80,6 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(model_dir)
 elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=DTYPE).to("cuda")
-  #pipe.enable_attention_slicing
   '''
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
@@ -106,6 +105,8 @@ elif device=='cuda':
   )
   '''
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  pipe.enable_attention_slicing()
+
 def text2img(prompt):
   start_time = time.time()
   num_inference_steps=20
