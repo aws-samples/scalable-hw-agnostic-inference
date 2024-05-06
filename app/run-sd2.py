@@ -16,9 +16,11 @@ model_dir=os.environ['COMPILER_WORKDIR_ROOT']
 DTYPE = torch.bfloat16
 
 if device=='xla':
-  from optimum.neuron import NeuronStableDiffusionPipeline, EulerAncestralDiscreteScheduler
+  from optimum.neuron import NeuronStableDiffusionPipeline 
 elif device=='cuda':
-  from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
+  from diffusers import StableDiffusionPipeline
+
+from diffusers import EulerAncestralDiscreteScheduler
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
