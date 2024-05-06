@@ -104,7 +104,7 @@ elif device=='cuda':
     mode="max-autotune-no-cudagraphs",
   )
   '''
-  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  #pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.enable_attention_slicing()
 
 def text2img(prompt):
