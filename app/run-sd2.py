@@ -16,7 +16,7 @@ model_dir=os.environ['COMPILER_WORKDIR_ROOT']
 DTYPE = torch.bfloat16
 
 if device=='xla':
-  from optimum.neuron import NeuronStableDiffusionPipeline
+  from optimum.neuron import NeuronStableDiffusionPipeline, EulerAncestralDiscreteScheduler
 elif device=='cuda':
   from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
 
@@ -80,7 +80,6 @@ elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=DTYPE).to("cuda")
   #pipe.enable_attention_slicing
   '''
-  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
 
@@ -104,16 +103,13 @@ elif device=='cuda':
     mode="max-autotune-no-cudagraphs",
   )
   '''
+  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
 def text2img(prompt):
   start_time = time.time()
   num_inference_steps=20
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   image = pipe(**model_args).images[0]
   total_time =  time.time()-start_time
-  r1 = random.randint(0,99999)
-  imgname="image"+str(r1)+".png"
-  image.save(imgname)
-  image = mpimg.imread(imgname)
   return image, str(total_time)
 
 #warmup
