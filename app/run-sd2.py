@@ -124,7 +124,7 @@ image = pipe(**model_args).images[0]
 app = FastAPI()
 io = gr.Interface(fn=text2img,inputs=["text"],
     outputs = [gr.Image(height=512, width=512), "text"],
-    title = 'Stable Diffusion 2.1 in AWS EC2 ' + device + ' instance')
+    title = 'Stable Diffusion 2.1 in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
 
 @app.get("/")
 def read_main():
