@@ -79,31 +79,32 @@ class LatencyCollector:
 if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(model_dir)
 elif device=='cuda':
-  pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=DTYPE).to("cuda")
+  pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
 
-  pipe.unet = torch.compile(pipe.unet, 
+  pipe.unet = torch.compile(
+    pipe.unet, 
     fullgraph=True, 
-    mode="max-autotune-no-cudagraphs"
+    mode="max-autotune"
   )
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
   pipe.vae.post_quant_conv = torch.compile(
     pipe.vae.post_quant_conv,
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
-  #pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
-  pipe.enable_attention_slicing()
+  #pipe.enable_attention_slicing()
 
 def text2img(prompt):
   start_time = time.time()
@@ -131,11 +132,11 @@ def read_main():
 @app.get("/load/{n_runs}/infer/{n_inf}")
 def load(n_runs: int,n_inf: int):
   prompt = "a photo of an astronaut riding a horse on mars"
-  #num_inference_steps = n_inf
-  if device=='xla':
-    num_inference_steps = 3
-  elif device=='cuda':
-    num_inference_steps = 1
+  num_inference_steps = n_inf
+  #if device=='xla':
+  #  num_inference_steps = 3
+  #elif device=='cuda':
+  #  num_inference_steps = 1
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
   return {"message": "benchmark report:"+report}

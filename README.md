@@ -19,6 +19,48 @@ Following this, the process assembles the model on the designated AI chip by dep
 
 ![alt text](/aws-gpu-neuron-eks-sample-model-build.png)
 ### Deploy-time
+
+The deployment phase (scheduling time) involves deploying Kubernetes constructs such as pods, services, ingress, and node pools. We configure a Kubernetes deployment per compute accelerator because the OCI image is built on accelerator-specific DLC. Thus, we configure a Karpenter node pool per compute accelerator to launch Kubernetes nodes with the compute-specific accelerator.
+
+The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch. Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
+
+The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core.
+```yaml
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: amd-nvidia
+spec:
+  template:
+    spec:
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["g5","g6"]
+```
+Similarly, in the AWS Inferntia Karpenter nodepool we allow the `inf1` and `inf2` instances.
+```yaml
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: amd-neuron
+spec:
+  template:
+    spec:
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["inf1","inf2"]
+```
+
+Additionally, it may take some time for the pods to launch into the model pipeline. It is essential to build readiness and health probes that inform the ALB which pods to target and which pods to recycle if they fail.
+
 ![alt text](/aws-gpu-neuron-eks-sample-model-deploy.png)
 ### Run-time
 ![alt text](/aws-gpu-neuron-eks-sample-model-run.png)
