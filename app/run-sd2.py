@@ -10,15 +10,19 @@ import torch
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
-model_dir=os.environ['COMPILER_WORKDIR_ROOT']
+compiled_model_id=os.environ['COMPILED_MODEL_ID']
+num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
+
 
 # Define datatype
 DTYPE = torch.bfloat16
 
 if device=='xla':
-  from optimum.neuron import NeuronStableDiffusionPipeline
+  from optimum.neuron import NeuronStableDiffusionPipeline 
 elif device=='cuda':
-  from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
+  from diffusers import StableDiffusionPipeline
+
+from diffusers import EulerAncestralDiscreteScheduler
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -75,70 +79,62 @@ class LatencyCollector:
         return latency_list[pos_ceil] if pos_float - pos_floor > 0.5 else latency_list[pos_floor]
 
 if device=='xla':
-  pipe = NeuronStableDiffusionPipeline.from_pretrained(model_dir)
+  pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda':
-  pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=DTYPE).to("cuda")
-  #pipe.enable_attention_slicing
+  pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+  pipe.enable_attention_slicing()
   '''
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
-
-  pipe.unet = torch.compile(pipe.unet, 
+  pipe.unet = torch.compile(
+    pipe.unet, 
     fullgraph=True, 
-    mode="max-autotune-no-cudagraphs"
+    mode="max-autotune"
   )
+
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
+
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
+
   pipe.vae.post_quant_conv = torch.compile(
     pipe.vae.post_quant_conv,
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
-  '''
+ ''' 
 def text2img(prompt):
   start_time = time.time()
-  num_inference_steps=20
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   image = pipe(**model_args).images[0]
   total_time =  time.time()-start_time
-  r1 = random.randint(0,99999)
-  imgname="image"+str(r1)+".png"
-  image.save(imgname)
-  image = mpimg.imread(imgname)
   return image, str(total_time)
-
-#warmup
-prompt = "a photo of an astronaut riding a horse on mars"
-num_inference_steps=2
-model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
-image = pipe(**model_args).images[0]
 
 app = FastAPI()
 io = gr.Interface(fn=text2img,inputs=["text"],
     outputs = [gr.Image(height=512, width=512), "text"],
-    title = 'Stable Diffusion 2.1 in AWS EC2 ' + device + ' instance')
+    title = 'Stable Diffusion 2.1 in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
 
 @app.get("/")
 def read_main():
-  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} or /serve"}
+  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
 
 @app.get("/load/{n_runs}/infer/{n_inf}")
 def load(n_runs: int,n_inf: int):
   prompt = "a photo of an astronaut riding a horse on mars"
-  #num_inference_steps = n_inf
-  if device=='xla':
-    num_inference_steps = 3
-  elif device=='cuda':
-    num_inference_steps = 1
+  num_inference_steps = n_inf
+  #if device=='xla':
+  #  num_inference_steps = 3
+  #elif device=='cuda':
+  #  num_inference_steps = 1
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
   return {"message": "benchmark report:"+report}
