@@ -10,7 +10,7 @@ import torch
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
-model_dir=os.environ['MODEL_DIR']
+compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=os.environ['NUM_OF_RUNS_INF']
 
 
@@ -79,7 +79,7 @@ class LatencyCollector:
         return latency_list[pos_ceil] if pos_float - pos_floor > 0.5 else latency_list[pos_floor]
 
 if device=='xla':
-  pipe = NeuronStableDiffusionPipeline.from_pretrained(model_dir)
+  pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
   pipe.enable_attention_slicing()
