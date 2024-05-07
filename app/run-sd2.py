@@ -10,7 +10,7 @@ import torch
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
-model_dir=os.environ['COMPILER_WORKDIR_ROOT']
+model_dir=os.environ['MODEL_DIR']
 num_inference_steps=os.environ['NUM_OF_RUNS_INF']
 
 
