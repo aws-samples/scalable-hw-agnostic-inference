@@ -82,6 +82,7 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(model_dir)
 elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+  pipe.enable_attention_slicing()
   '''
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
