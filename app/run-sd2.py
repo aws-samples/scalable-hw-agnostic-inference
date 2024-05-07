@@ -113,6 +113,7 @@ elif device=='cuda':
  ''' 
 def text2img(prompt):
   start_time = time.time()
+  num_inference_steps=os.environ['NUM_OF_RUNS_INF']
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   image = pipe(**model_args).images[0]
   total_time =  time.time()-start_time
