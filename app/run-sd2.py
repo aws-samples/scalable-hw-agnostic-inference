@@ -11,6 +11,8 @@ pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 model_dir=os.environ['COMPILER_WORKDIR_ROOT']
+num_inference_steps=os.environ['NUM_OF_RUNS_INF']
+
 
 # Define datatype
 DTYPE = torch.bfloat16
@@ -108,7 +110,6 @@ elif device=='cuda':
 
 def text2img(prompt):
   start_time = time.time()
-  num_inference_steps=20
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   image = pipe(**model_args).images[0]
   total_time =  time.time()-start_time
@@ -116,7 +117,6 @@ def text2img(prompt):
 
 #warmup
 prompt = "a photo of an astronaut riding a horse on mars"
-num_inference_steps=2
 model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
 image = pipe(**model_args).images[0]
 
