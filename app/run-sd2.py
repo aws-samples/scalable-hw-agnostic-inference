@@ -85,7 +85,7 @@ elif device=='cuda':
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
-
+  '''
   pipe.unet = torch.compile(
     pipe.unet, 
     fullgraph=True, 
@@ -109,7 +109,7 @@ elif device=='cuda':
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
-  
+ ''' 
 def text2img(prompt):
   start_time = time.time()
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
