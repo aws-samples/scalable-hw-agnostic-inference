@@ -117,11 +117,6 @@ def text2img(prompt):
   total_time =  time.time()-start_time
   return image, str(total_time)
 
-#warmup
-prompt = "a photo of an astronaut riding a horse on mars"
-model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
-image = pipe(**model_args).images[0]
-
 app = FastAPI()
 io = gr.Interface(fn=text2img,inputs=["text"],
     outputs = [gr.Image(height=512, width=512), "text"],
