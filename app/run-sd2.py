@@ -126,7 +126,7 @@ io = gr.Interface(fn=text2img,inputs=["text"],
 
 @app.get("/")
 def read_main():
-  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} or /serve"}
+  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
 
 @app.get("/load/{n_runs}/infer/{n_inf}")
 def load(n_runs: int,n_inf: int):
