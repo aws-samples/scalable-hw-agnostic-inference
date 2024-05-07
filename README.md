@@ -59,7 +59,64 @@ spec:
           values: ["inf1","inf2"]
 ```
 
-Additionally, it may take some time for the pods to launch into the model pipeline. It is essential to build readiness and health probes that inform the ALB which pods to target and which pods to recycle if they fail.
+We use an Application Load Balancer (ALB)-based Ingress to control traffic flowing to GPU-based and Inferentia-based node pools. We created an Application Load Balancer using the AWS Load Balancer Controller to distribute incoming requests among the different pods. It controls the traffic routing in the ingress by adding an ingress.kubernetes.io/actions.weighted-routing annotation. You can adjust the weight in the example below to meet your needs. Note, `inf-svc` and `gpu-svc` denotes the k8s services that masks the Inferentia and GPU k8s pods.  
+```json
+    alb.ingress.kubernetes.io/actions.forward-multiple-tg: >
+      {
+       "type":"forward","forwardConfig":
+       {
+         "targetGroups":[
+           {
+             "serviceName":"inf-svc",
+             "servicePort":80,
+             "weight":50
+           },
+           {
+             "serviceName":"gpu-svc",
+             "servicePort":80,
+             "weight":50
+           }
+         ],
+         "targetGroupStickinessConfig":
+           {
+             "enabled":true,
+             "durationSeconds":200
+           }
+       }
+     }
+```
+
+Additionally, it may take some time for the pods to launch into the model pipeline. It is essential to build readiness and health probes that inform the ALB which pods to target and which pods to recycle if they fail. Therefore we implemented a ping-like gRPC API returns the status of a model in the ModelServer, similar to [pytorch Health check API](https://pytorch.org/serve/inference_api.html#health-check-api). We use it to define the pod inference health and readiness to accept predictions requests. 
+First, we define it in the pod specification:
+```yaml
+      containers:
+      - name: app
+      ...
+       readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+```
+
+Second, we define it in the ALB ingress:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gradio-mix-ing
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '10'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '9'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '10'
+    alb.ingress.kubernetes.io/success-codes: '200-301'
+```
 
 ![alt text](/aws-gpu-neuron-eks-sample-model-deploy.png)
 ### Run-time
