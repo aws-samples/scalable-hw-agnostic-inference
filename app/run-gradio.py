@@ -11,7 +11,7 @@ pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
-num_inference_steps=os.environ['NUM_OF_RUNS_INF']
+num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 
 
 # Define datatype
