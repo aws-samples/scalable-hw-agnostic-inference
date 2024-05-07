@@ -91,23 +91,25 @@ elif device=='cuda':
     fullgraph=True, 
     mode="max-autotune"
   )
+
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
     mode="max-autotune",
   )
+
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
     mode="max-autotune",
   )
+
   pipe.vae.post_quant_conv = torch.compile(
     pipe.vae.post_quant_conv,
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
-  #pipe.enable_attention_slicing()
-
+  
 def text2img(prompt):
   start_time = time.time()
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
