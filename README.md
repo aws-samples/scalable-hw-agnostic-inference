@@ -20,11 +20,11 @@ Following this, the process assembles the model on the designated AI chip by dep
 ![alt text](/aws-gpu-neuron-eks-sample-model-build.png)
 ### Deploy-time
 
-The deployment phase (scheduling time) involves deploying Kubernetes constructs such as pods, services, ingress, and node pools. We configure a Kubernetes deployment per compute accelerator because the OCI image is built on accelerator-specific DLC. Thus, we configure a Karpenter node pool per compute accelerator to launch Kubernetes nodes with the compute-specific accelerator.
+The deployment phase (scheduling time) involves deploying Kubernetes constructs such as pods, services, ingress, and node pools (Step 1). We configure a Kubernetes deployment per compute accelerator because the OCI image is built on accelerator-specific DLC. Thus, we configure a Karpenter node pool per compute accelerator to launch Kubernetes nodes with the compute-specific accelerator.
 
-The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch. Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
+The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch (Step 2). Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
 
-The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core.
+The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3).
 ```yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -59,7 +59,7 @@ spec:
           values: ["inf1","inf2"]
 ```
 
-We use an Application Load Balancer (ALB)-based Ingress to control traffic flowing to GPU-based and Inferentia-based node pools. We created an Application Load Balancer using the AWS Load Balancer Controller to distribute incoming requests among the different pods. It controls the traffic routing in the ingress by adding an ingress.kubernetes.io/actions.weighted-routing annotation. You can adjust the weight in the example below to meet your needs. Note, `inf-svc` and `gpu-svc` denotes the k8s services that masks the Inferentia and GPU k8s pods.  
+We use an Application Load Balancer (ALB)-based Ingress to control traffic flowing to GPU-based and Inferentia-based node pools. We created an Application Load Balancer using the AWS Load Balancer Controller to distribute incoming requests among the different pods. It controls the traffic routing in the ingress by adding an ingress.kubernetes.io/actions.weighted-routing annotation. You can adjust the weight in the example below to meet your needs. Note, `inf-svc` and `gpu-svc` denotes the k8s services that masks the Inferentia and GPU k8s pods (Step 4).  
 ```json
     alb.ingress.kubernetes.io/actions.forward-multiple-tg: >
       {
@@ -120,4 +120,12 @@ metadata:
 
 ![alt text](/aws-gpu-neuron-eks-sample-model-deploy.png)
 ### Run-time
+Now that we have enabled the model inference endpoint on both GPU and Inferentia instances, our next steps involve scaling the compute capacity to meet user demand and fine-tuning system performance. To achieve this, we utilize Amazon CloudWatch Container Insights with Enhanced Observability for EKS. This service automatically discovers critical health metrics from AWS accelerators such as Inferentia and NVIDIA GPUs. By leveraging Container Insights dashboards, we can visualize these pre-configured metrics, allowing us to monitor the accelerated infrastructure and optimize workload usage effectively.
+
+Additionally, we use KEDA, a Kubernetes Event-driven Autoscaling tool, to manage the number of required pods. With KEDA, users can define metrics and thresholds, enabling automatic scaling based on workload demands. In our case, we prioritize optimizing for latency in the inference process. 
 ![alt text](/aws-gpu-neuron-eks-sample-model-run.png)
+
+Therefore, we configure KEDA to trigger additional pods when throughput fails to exceed 200 RPM for GPUs and 300 RPM for Inferentia. This is becasue the Neuron core utilization saturates at 300 RPM for Inferentia and 200 RPM for GPUs.
+
+![alt_text](/aws-gpu-neuron-eks-sample-perf.png)
+![alt_text](/aws-gpu-neuron-eks-sample-perf2.png)
