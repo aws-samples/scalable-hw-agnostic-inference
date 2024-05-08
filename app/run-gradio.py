@@ -63,6 +63,7 @@ def text2img(prompt):
   total_time =  time.time()-start_time
   return image, str(total_time)
 
+prompt="portrait photo of a old warrior chief"
 model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
 image = pipe(**model_args).images[0]
 app = FastAPI()
