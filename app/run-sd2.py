@@ -134,8 +134,8 @@ def read_main():
 def load(n_runs: int,n_inf: int):
   prompt = "a photo of an astronaut riding a horse on mars"
   num_inference_steps = n_inf
-#  if device=='xla':
-#    num_inference_steps = 8
+  if device=='xla':
+    num_inference_steps = 4
 #  elif device=='cuda':
 #    num_inference_steps = 1
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
