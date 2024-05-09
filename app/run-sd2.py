@@ -94,19 +94,19 @@ elif device=='cuda':
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
 
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
 
   pipe.vae.post_quant_conv = torch.compile(
     pipe.vae.post_quant_conv,
     fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
+    mode="max-autotune",
   )
   pipe.enable_attention_slicing()
 
