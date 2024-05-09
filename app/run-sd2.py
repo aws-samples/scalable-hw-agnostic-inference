@@ -100,7 +100,7 @@ elif device=='cuda':
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
-    mode="max-autotune",
+    mode="max-autotune-no-cudagraphs",
   )
 
   pipe.vae.post_quant_conv = torch.compile(
