@@ -125,7 +125,32 @@ Now that we have enabled the model inference endpoint on both GPU and Inferentia
 Additionally, we use KEDA, a Kubernetes Event-driven Autoscaling tool, to manage the number of required pods. With KEDA, users can define metrics and thresholds, enabling automatic scaling based on workload demands. In our case, we prioritize optimizing for latency in the inference process. 
 ![alt text](/aws-gpu-neuron-eks-sample-model-run.png)
 
-Therefore, we configure KEDA to trigger additional pods when throughput fails to exceed 200 RPM for GPUs and 300 RPM for Inferentia. This is becasue the Neuron core utilization saturates at 300 RPM for Inferentia and 200 RPM for GPUs.
+Therefore, we configure KEDA to trigger additional pods when throughput fails to exceed 200 RPM for GPUs and 300 RPM for Inferentia. This is becasue the Neuron core utilization saturates at 300 RPM for Inferentia and 200 RPM for GPUs (`targetMetricValue`). We also maintained minimal capacity of 2 pods (`minReplicaCount`. Below is the GPU `ScaledObject` specification:
+```yaml
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: stable-diffusion-gpu-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: stable-diffusion-gpu
+  minReplicaCount: 2
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: AWS/ApplicationELB
+        expression: SELECT SUM(HTTPCode_Target_2XX_Count) 
+                    FROM SCHEMA("AWS/ApplicationELB", LoadBalancer,TargetGroup) 
+                    WHERE TargetGroup = 'targetgroup/tgname/guid' 
+                    AND LoadBalancer = 'app/albname/guid'
+        metricName: HTTPCode_Target_2XX_Count
+        minMetricValue: "2"
+        targetMetricValue: "300"
+        metricUnit: Count
+        awsRegion: us-west-2
+```
 
 ![alt_text](/aws-gpu-neuron-eks-sample-perf.png)
 ![alt_text](/aws-gpu-neuron-eks-sample-perf2.png)

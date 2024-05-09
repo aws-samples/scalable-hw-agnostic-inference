@@ -28,26 +28,25 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.enable_attention_slicing()
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
   pipe.unet = torch.compile(
     pipe.unet, 
     fullgraph=True, 
-    mode="max-autotune"
+    mode="max-autotune-no-cudagraphs"
   )
 
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
-    mode="max-autotune",
+    mode="max-autotune-no-cudagraphs",
   )
 
   pipe.vae.decoder = torch.compile(
     pipe.vae.decoder,
     fullgraph=True,
-    mode="max-autotune",
+    mode="max-autotune-no-cudagraphs",
   )
 
   pipe.vae.post_quant_conv = torch.compile(
@@ -55,6 +54,7 @@ elif device=='cuda':
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
+  pipe.enable_attention_slicing()
 
 def text2img(prompt):
   start_time = time.time()
@@ -63,6 +63,9 @@ def text2img(prompt):
   total_time =  time.time()-start_time
   return image, str(total_time)
 
+prompt="portrait photo of a old warrior chief"
+model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
+image = pipe(**model_args).images[0]
 app = FastAPI()
 io = gr.Interface(fn=text2img,inputs=["text"],
     outputs = [gr.Image(height=512, width=512), "text"],
