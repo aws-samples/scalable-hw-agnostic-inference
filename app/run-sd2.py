@@ -94,7 +94,7 @@ elif device=='cuda':
   pipe.text_encoder = torch.compile(
     pipe.text_encoder,
     fullgraph=True,
-    mode="max-autotune",
+    mode="max-autotune-no-cudagraphs",
   )
 
   pipe.vae.decoder = torch.compile(
