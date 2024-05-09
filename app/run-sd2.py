@@ -88,7 +88,7 @@ elif device=='cuda':
   pipe.unet = torch.compile(
     pipe.unet, 
     fullgraph=True, 
-    mode="max-autotune"
+    mode="max-autotune-no-cudagraphs"
   )
 
   pipe.text_encoder = torch.compile(
