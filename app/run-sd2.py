@@ -135,7 +135,7 @@ def load(n_runs: int,n_inf: int):
   prompt = "a photo of an astronaut riding a horse on mars"
   num_inference_steps = n_inf
   if device=='xla':
-    num_inference_steps = 3
+    num_inference_steps = 2
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
   return {"message": "benchmark report:"+report}
