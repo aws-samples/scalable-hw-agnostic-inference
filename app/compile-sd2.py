@@ -13,7 +13,7 @@ from huggingface_hub.hf_api import HfFolder
 from optimum.neuron import NeuronStableDiffusionPipeline
 
 HfFolder.save_token(hf_token)
-compiler_args = {"auto_cast": "matmul", "auto_cast_type": "bf16","inline_weights_to_neff": "True"}
+compiler_args = {"auto_cast": "none", "auto_cast_type": "bf16","inline_weights_to_neff": "True"}
 input_shapes = {"batch_size": batch_size, "height": height, "width": width}
 stable_diffusion = NeuronStableDiffusionPipeline.from_pretrained(model_id, export=True, **compiler_args, **input_shapes)
 stable_diffusion.save_pretrained(model_dir)

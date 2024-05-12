@@ -24,7 +24,7 @@ The deployment phase (scheduling time) involves deploying Kubernetes constructs 
 
 The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch (Step 2). Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
 
-The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3).
+The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3). When deploying a stable diffusion pipeline from Hugging Face, typically only specific files required to load the model are pulled. These files usually include the model weights, configuration file, and any necessary tokenizer files for inference. This approach streamlines the deployment process by only fetching essential components, rather than the entire model, optimizing resource usage and minimizing overhead.
 ```yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -37,9 +37,9 @@ spec:
         - key: kubernetes.io/arch
           operator: In
           values: ["amd64"]
-        - key: karpenter.k8s.aws/instance-family
+        - key: karpenter.k8s.aws/instance-gpu-name
           operator: In
-          values: ["g5","g6"]
+          values: ["a10g","l4"]
 ```
 Similarly, in the AWS Inferntia Karpenter nodepool we allow the `inf1` and `inf2` instances.
 ```yaml
@@ -120,12 +120,14 @@ metadata:
 
 ![alt text](/aws-gpu-neuron-eks-sample-model-deploy.png)
 ### Run-time
-Now that we have enabled the model inference endpoint on both GPU and Inferentia instances, our next steps involve scaling the compute capacity to meet user demand and fine-tuning system performance. To achieve this, we utilize Amazon CloudWatch Container Insights with Enhanced Observability for EKS. This service automatically discovers critical health metrics from AWS accelerators such as Inferentia and NVIDIA GPUs. By leveraging Container Insights dashboards, we can visualize these pre-configured metrics, allowing us to monitor the accelerated infrastructure and optimize workload usage effectively.
+Now that we have enabled the model inference endpoint on both GPU and Inferentia instances, we need to scale the compute capacity to meet user demand and fine-tuning system performance. To achieve this, we utilize Amazon CloudWatch Container Insights with Enhanced Observability for EKS. This service automatically discovers critical health metrics from AWS accelerators such as Inferentia and NVIDIA GPUs. By leveraging Container Insights dashboards, we can visualize these pre-configured metrics, allowing us to monitor the accelerated infrastructure and optimize workload usage effectively.
 
 Additionally, we use KEDA, a Kubernetes Event-driven Autoscaling tool, to manage the number of required pods. With KEDA, users can define metrics and thresholds, enabling automatic scaling based on workload demands. In our case, we prioritize optimizing for latency in the inference process. 
 ![alt text](/aws-gpu-neuron-eks-sample-model-run.png)
 
-Therefore, we configure KEDA to trigger additional pods when throughput fails to exceed 200 RPM for GPUs and 300 RPM for Inferentia. This is becasue the Neuron core utilization saturates at 300 RPM for Inferentia and 200 RPM for GPUs (`targetMetricValue`). We also maintained minimal capacity of 2 pods (`minReplicaCount`. Below is the GPU `ScaledObject` specification:
+Therefore, we configure KEDA to trigger Horizontal Pod Autoscaler (HPA) to increase or decrease the number of pods when throughput per pod reaches a threshold that ensures acceptable service (latency). We determine this threshold based on experiments and observations. We will share the results in the next paragraph along with the data that led us to tune the compute accelerator allocation. Specifically, we will look for the breaking point with the Neuron and NVIDIA models we load.
+
+In the KEDA `ScaledObject` config below, we specify the `Deployment` to contorl. We specify the `aws-cloudwatch` metric to use for the pod throughput (`targetMetricValue`) to control (in the `metadata.expression`). We also maintained minimal capacity of 2 pods denoted by `minReplicaCount`
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -147,10 +149,21 @@ spec:
                     AND LoadBalancer = 'app/albname/guid'
         metricName: HTTPCode_Target_2XX_Count
         minMetricValue: "2"
-        targetMetricValue: "300"
+        targetMetricValue: "100"
         metricUnit: Count
         awsRegion: us-west-2
 ```
-
+#### Analyzing Experimental Findings: Insights and Implications
+We initially wanted to test the quality of the generated images by sampling the web app. Below are two examples:
+![alt_text](/gpu-gradio-sample.png)
+![alt_text](/inf-gradio-sample.png)
+We loaded the inference service using a simple synthetic loader that controls the number of inference calls based on a sine function distribution. Below are the run-time performance results after we tuned KEDA and Karpenter:
 ![alt_text](/aws-gpu-neuron-eks-sample-perf.png)
 ![alt_text](/aws-gpu-neuron-eks-sample-perf2.png)
+
+Initially, we set the targetMetricValue=100 for both GPU and Inf2 options. However, we encountered application errors, prompting us to adjust the throughput per pod and compute. Below are the results that indicate HTTP 500 errors in the GPU calls.
+![alt_text](/gpu-inf-http-200-500-load.png)
+We compared the results with the model inference logs and the core utilization and observe that `targetMetricValue=100` satrurated the GPU core faster than the Inf2 core so we decrease the `targetMetricValue` for GPU. 
+![alt_text](/pod-inf-gpu-utilization.png)
+
+
