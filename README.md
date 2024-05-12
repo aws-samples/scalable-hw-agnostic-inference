@@ -24,7 +24,7 @@ The deployment phase (scheduling time) involves deploying Kubernetes constructs 
 
 The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch (Step 2). Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
 
-The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3).
+The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3). When deploying a stable diffusion pipeline from Hugging Face, typically only specific files required to load the model are pulled. These files usually include the model weights, configuration file, and any necessary tokenizer files for inference. This approach streamlines the deployment process by only fetching essential components, rather than the entire model, optimizing resource usage and minimizing overhead.
 ```yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -37,9 +37,9 @@ spec:
         - key: kubernetes.io/arch
           operator: In
           values: ["amd64"]
-        - key: karpenter.k8s.aws/instance-family
+        - key: karpenter.k8s.aws/instance-gpu-name
           operator: In
-          values: ["g5","g6"]
+          values: ["a10g","l4"]
 ```
 Similarly, in the AWS Inferntia Karpenter nodepool we allow the `inf1` and `inf2` instances.
 ```yaml
@@ -165,3 +165,5 @@ Initially, we set the targetMetricValue=100 for both GPU and Inf2 options. Howev
 ![alt_text](/gpu-inf-http-200-500-load.png)
 We compared the results with the model inference logs and the core utilization and observe that `targetMetricValue=100` satrurated the GPU core faster than the Inf2 core so we decrease the `targetMetricValue` for GPU. 
 ![alt_text](/pod-inf-gpu-utilization.png)
+
+
