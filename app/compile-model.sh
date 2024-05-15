@@ -1,6 +1,5 @@
 #!/bin/bash -x
-. /root/.bashrc
-mkdir model_store
+while true; do sleep 1000; done
 pip install --upgrade pip
 if [ "$(uname -i)" = "x86_64" ]; then
   if [ $DEVICE="xla" ]; then
@@ -10,4 +9,3 @@ if [ "$(uname -i)" = "x86_64" ]; then
   fi
 fi
 
-while true; do sleep 1000; done
