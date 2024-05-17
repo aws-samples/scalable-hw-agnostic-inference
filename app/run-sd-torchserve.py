@@ -51,7 +51,7 @@ class DiffusersHandler(BaseHandler, ABC):
         mode="max-autotune-no-cudagraphs",
       )
       self.pipe.vae.post_quant_conv = torch.compile(
-        pipe.vae.post_quant_conv,
+        self.pipe.vae.post_quant_conv,
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
