@@ -10,6 +10,7 @@ from diffusers import EulerAncestralDiscreteScheduler
 pod_name=os.environ['POD_NAME']
 device=os.environ["DEVICE"]
 model_id=os.environ['MODEL_ID']
+compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 height=int(os.environ['HEIGHT'])
 width=int(os.environ['WIDTH'])
