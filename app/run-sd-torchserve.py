@@ -5,8 +5,7 @@ import logging
 import numpy as np
 from abc import ABC
 from ts.torch_handler.base_handler import BaseHandler
-from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
-
+from diffusers import EulerAncestralDiscreteScheduler
 
 pod_name=os.environ['POD_NAME']
 device=os.environ["DEVICE"]
@@ -14,6 +13,11 @@ model_id=os.environ['MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 height=int(os.environ['HEIGHT'])
 width=int(os.environ['WIDTH'])
+
+if device=='xla':
+  from optimum.neuron import NeuronStableDiffusionPipeline
+elif device=='cuda':
+  from diffusers import StableDiffusionPipeline
 
 logger = logging.getLogger(__name__)
 DTYPE = torch.bfloat16
@@ -25,7 +29,34 @@ class DiffusersHandler(BaseHandler, ABC):
   def initialize(self, ctx):
     self.manifest = ctx.manifest
     logger.info("properties: %s", ctx.system_properties)
-    self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+    if device=='xla':
+      self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
+    elif device=='cuda':
+      self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+      self.pipe.unet.to(memory_format=torch.channels_last)
+      self.pipe.vae.to(memory_format=torch.channels_last)
+      self.pipe.unet = torch.compile(
+        self.pipe.unet,
+        fullgraph=True,
+        mode="max-autotune-no-cudagraphs"
+      )
+      self.pipe.text_encoder = torch.compile(
+        self.pipe.text_encoder,
+        fullgraph=True,
+        mode="max-autotune-no-cudagraphs",
+      )
+      self.pipe.vae.decoder = torch.compile(
+        self.pipe.vae.decoder,
+        fullgraph=True,
+        mode="max-autotune-no-cudagraphs",
+      )
+      self.pipe.vae.post_quant_conv = torch.compile(
+        pipe.vae.post_quant_conv,
+        fullgraph=True,
+        mode="max-autotune-no-cudagraphs",
+      )
+
+    pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
     self.initialized = True
@@ -46,7 +77,6 @@ class DiffusersHandler(BaseHandler, ABC):
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
     logger.info("inference with model args: %s", str(model_args))
     inferences = self.pipe(**model_args).images
-    inferences = "override"
     return inferences
     
   def postprocess(self, inference_output):
