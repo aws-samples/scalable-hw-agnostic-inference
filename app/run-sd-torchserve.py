@@ -28,28 +28,33 @@ class DiffusersHandler(BaseHandler, ABC):
 
   def initialize(self, ctx):
     self.manifest = ctx.manifest
-    print("properties:",ctx.system_properties)
+    worker_id = self.context.worker_id
+    print("initialize worked_id:",worker_id,flush=True)
     if device=='xla':
       self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
     elif device=='cuda':
       self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
       self.pipe.unet.to(memory_format=torch.channels_last)
       self.pipe.vae.to(memory_format=torch.channels_last)
+      print("torch.compile before unet",flush=True)
       self.pipe.unet = torch.compile(
         self.pipe.unet,
         fullgraph=True,
         mode="max-autotune-no-cudagraphs"
       )
+      print("torch.compile before text_encoder",flush=True)
       self.pipe.text_encoder = torch.compile(
         self.pipe.text_encoder,
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
+      print("torch.compile before vae.decoder",flush=True)
       self.pipe.vae.decoder = torch.compile(
         self.pipe.vae.decoder,
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
+      print("torch.compile before vae.post_quant_conv",flush=True)
       self.pipe.vae.post_quant_conv = torch.compile(
         self.pipe.vae.post_quant_conv,
         fullgraph=True,
@@ -59,10 +64,10 @@ class DiffusersHandler(BaseHandler, ABC):
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
     model_args={'prompt': 'a photo of an astronaut riding a horse on mars','num_inference_steps': 2,}
-    print("inference with model args:",str(model_args))
+    print("inference with model args:",str(model_args),flush=True)
     inferences = self.pipe(**model_args).images
     self.initialized = True
-    print("Diffusion model from path ",model_id," loaded successfully; model state is ",self.initialized)
+    print("Diffusion model from path ",model_id," loaded successfully; model state is ",self.initialized,flush=True)
   
   def preprocess(self, requests):
     inputs = []
@@ -76,15 +81,24 @@ class DiffusersHandler(BaseHandler, ABC):
     return inputs
 
   def inference(self, inputs):
+    if not self.initialized:
+      raise Exception(f"Worker {self.context.worker_id} is not initialized yet.")
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
-    print("inference with model args:",str(model_args))
+    print("inference with model args:",str(model_args),flush=True)
     inferences = self.pipe(**model_args).images
     return inferences
     
   def postprocess(self, inference_output):
     inference_output = [1, 2, 3, 4, 5]
-    print("postprocess inference_output:",str(inference_output))
+    print("postprocess inference_output:",str(inference_output),flush=True)
     images = []
     for image in inference_output:
       images.append(np.array(image).tolist())
     return images
+
+  def health_check(self):
+    print("health_check self.initialized:",str(self.initialized),flush=True)
+    if self.initialized:
+      return "OK"
+    else:
+      return "Worker is not initialized yet." 
