@@ -83,14 +83,14 @@ class DiffusersHandler(BaseHandler, ABC):
 
   def inference(self, inputs):
     if not self.initialized:
-      raise Exception(f"Worker {self.context.worker_id} is not initialized yet.")
+      raise Exception(f"Worker is not initialized yet.")
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
     print("inference with model args:",str(model_args),flush=True)
     inferences = self.pipe(**model_args).images
     return inferences
     
   def postprocess(self, inference_output):
-    inference_output = [1, 2, 3, 4, 5]
+    inference_output = [1]
     print("postprocess inference_output:",str(inference_output),flush=True)
     images = []
     for image in inference_output:
