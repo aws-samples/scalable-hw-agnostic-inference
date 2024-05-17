@@ -2,7 +2,7 @@ import os
 import math
 import torch
 import logging
-import np
+import numpy as np
 from abc import ABC
 from ts.torch_handler.base_handler import BaseHandler
 from diffusers import StableDiffusionPipeline, EulerAncestralDiscreteScheduler
@@ -14,6 +14,9 @@ model_id=os.environ['MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 height=int(os.environ['HEIGHT'])
 width=int(os.environ['WIDTH'])
+
+logger = logging.getLogger(__name__)
+DTYPE = torch.bfloat16
 
 class DiffusersHandler(BaseHandler, ABC):
   def __init__(self):
