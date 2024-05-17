@@ -26,7 +26,7 @@ class DiffusersHandler(BaseHandler, ABC):
     self.manifest = ctx.manifest
     logger.info("properties: %s", ctx.system_properties)
     self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-    self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+    self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
     self.initialized = True
     logger.info("Diffusion model from path %s loaded successfully",model_id)
