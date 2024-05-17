@@ -46,6 +46,7 @@ class DiffusersHandler(BaseHandler, ABC):
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
     logger.info("inference with model args: %s", str(model_args))
     inferences = self.pipe(**model_args).images
+    inferences = "override"
     return inferences
     
   def postprocess(self, inference_output):
