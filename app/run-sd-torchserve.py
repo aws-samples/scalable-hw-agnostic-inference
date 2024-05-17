@@ -28,12 +28,11 @@ class DiffusersHandler(BaseHandler, ABC):
 
   def initialize(self, ctx):
     self.manifest = ctx.manifest
-    logger.info("properties: %s", ctx.system_properties)
+    print("properties:",ctx.system_properties)
     if device=='xla':
       self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
     elif device=='cuda':
       self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-      '''
       self.pipe.unet.to(memory_format=torch.channels_last)
       self.pipe.vae.to(memory_format=torch.channels_last)
       self.pipe.unet = torch.compile(
@@ -56,12 +55,11 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
-    '''
     self.pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
     self.initialized = True
-    logger.info("Diffusion model from path %s loaded successfully; model state is %s",model_id,self.initialized)
+    print("Diffusion model from path ",model_id," loaded successfully; model state is ",self.initialized)
   
   def preprocess(self, requests):
     inputs = []
@@ -76,13 +74,13 @@ class DiffusersHandler(BaseHandler, ABC):
 
   def inference(self, inputs):
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
-    logger.info("inference with model args: %s", str(model_args))
+    print("inference with model args:",str(model_args))
     inferences = self.pipe(**model_args).images
     return inferences
     
   def postprocess(self, inference_output):
-    #inference_output = [1, 2, 3, 4, 5]
-    logger.info("postprocess inference_output: %s", str(inference_output))
+    inference_output = [1, 2, 3, 4, 5]
+    print("postprocess inference_output:",str(inference_output))
     images = []
     for image in inference_output:
       images.append(np.array(image).tolist())
