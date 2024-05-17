@@ -58,6 +58,9 @@ class DiffusersHandler(BaseHandler, ABC):
     self.pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
+    model_args={'prompt': 'a photo of an astronaut riding a horse on mars','num_inference_steps': 2,}
+    print("inference with model args:",str(model_args))
+    inferences = self.pipe(**model_args).images
     self.initialized = True
     print("Diffusion model from path ",model_id," loaded successfully; model state is ",self.initialized)
   
