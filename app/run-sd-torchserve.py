@@ -33,6 +33,7 @@ class DiffusersHandler(BaseHandler, ABC):
       self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
     elif device=='cuda':
       self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+      '''
       self.pipe.unet.to(memory_format=torch.channels_last)
       self.pipe.vae.to(memory_format=torch.channels_last)
       self.pipe.unet = torch.compile(
@@ -55,12 +56,12 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
-
+    '''
     self.pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
     self.initialized = True
-    logger.info("Diffusion model from path %s loaded successfully",model_id)
+    logger.info("Diffusion model from path %s loaded successfully; model state is %s",model_id,self.initialized)
   
   def preprocess(self, requests):
     inputs = []
