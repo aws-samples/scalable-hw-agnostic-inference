@@ -28,8 +28,7 @@ class DiffusersHandler(BaseHandler, ABC):
 
   def initialize(self, ctx):
     self.manifest = ctx.manifest
-    worker_id = self.ctx.worker_id
-    print("initialize worked_id:",worker_id,flush=True)
+    print("initialize ctx:",str(ctx),flush=True)
     if device=='xla':
       self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
     elif device=='cuda':
