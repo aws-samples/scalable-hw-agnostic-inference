@@ -15,3 +15,4 @@ if [ "$(uname -i)" = "x86_64" ]; then
   mv stable-diffusion.mar /model-store
   torchserve --start --ts-config config.properties
 fi
+while true; do sleep 1000; done
