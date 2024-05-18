@@ -82,7 +82,7 @@ class DiffusersHandler(BaseHandler, ABC):
     if not self.initialized:
       raise Exception(f"Worker is not initialized yet.")
     print("handle data:",str(data),flush=True)
-    prompt=self.preprocess(data)
+    prompt=self.preprocess(data[0])
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
     print("inference with model args:",str(model_args),flush=True)
     inference = self.pipe(**model_args).images[0]
