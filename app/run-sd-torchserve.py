@@ -34,6 +34,7 @@ class DiffusersHandler(BaseHandler, ABC):
       self.pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
     elif device=='cuda':
       self.pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+      '''
       self.pipe.unet.to(memory_format=torch.channels_last)
       self.pipe.vae.to(memory_format=torch.channels_last)
       print("torch.compile before unet",flush=True)
@@ -42,7 +43,6 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs"
       )
-      '''
       print("torch.compile before text_encoder",flush=True)
       self.pipe.text_encoder = torch.compile(
         self.pipe.text_encoder,
