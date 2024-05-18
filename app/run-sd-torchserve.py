@@ -80,7 +80,7 @@ class DiffusersHandler(BaseHandler, ABC):
       inputs.append(input_text)
     return inputs
 
-  def inference(self, inputs):
+  def handle(self, inputs):
     if not self.initialized:
       raise Exception(f"Worker is not initialized yet.")
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
