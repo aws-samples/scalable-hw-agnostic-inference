@@ -42,6 +42,7 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs"
       )
+      '''
       print("torch.compile before text_encoder",flush=True)
       self.pipe.text_encoder = torch.compile(
         self.pipe.text_encoder,
@@ -60,6 +61,7 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
+      '''
     self.pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 
