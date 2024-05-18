@@ -72,6 +72,7 @@ class DiffusersHandler(BaseHandler, ABC):
     print("Diffusion model from path ",model_id," loaded successfully; model state is ",self.initialized,flush=True)
   
   def preprocess(self, data):
+    print("preprocess data:",str(data),flush=True)
     prompt = data.get("prompt")
     if not prompt:
       raise ValueError("Please provide a prompt for image generation.")
@@ -80,6 +81,7 @@ class DiffusersHandler(BaseHandler, ABC):
   def handle(self,data,ctx):
     if not self.initialized:
       raise Exception(f"Worker is not initialized yet.")
+    print("handle data:",str(data),flush=True)
     prompt=self.preprocess(data)
     model_args={'prompt': inputs,'num_inference_steps': num_inference_steps,}
     print("inference with model args:",str(model_args),flush=True)
