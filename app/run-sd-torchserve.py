@@ -73,7 +73,7 @@ class DiffusersHandler(BaseHandler, ABC):
   
   def preprocess(self, data):
     print("preprocess data:",str(data),flush=True)
-    prompt = data.get("prompt")
+    prompt = data.decode().get("prompt")
     if not prompt:
       raise ValueError("Please provide a prompt for image generation.")
     return prompt
