@@ -83,6 +83,7 @@ if device=='xla':
 elif device=='cuda':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  '''
   pipe.unet.to(memory_format=torch.channels_last)
   pipe.vae.to(memory_format=torch.channels_last)
   pipe.unet = torch.compile(
@@ -108,6 +109,7 @@ elif device=='cuda':
     fullgraph=True,
     mode="max-autotune-no-cudagraphs",
   )
+  '''
   pipe.enable_attention_slicing()
 
 def text2img(prompt):
