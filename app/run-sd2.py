@@ -19,7 +19,7 @@ DTYPE = torch.bfloat16
 
 if device=='xla':
   from optimum.neuron import NeuronStableDiffusionPipeline 
-elif device=='cuda':
+elif device=='cuda' or device=='triton':
   from diffusers import StableDiffusionPipeline
 
 from diffusers import EulerAncestralDiscreteScheduler
@@ -80,34 +80,35 @@ class LatencyCollector:
 
 if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
-elif device=='cuda':
+elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
   pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
-  pipe.unet.to(memory_format=torch.channels_last)
-  pipe.vae.to(memory_format=torch.channels_last)
-  pipe.unet = torch.compile(
-    pipe.unet, 
-    fullgraph=True, 
-    mode="max-autotune-no-cudagraphs"
-  )
+  if device=='triton':
+    pipe.unet.to(memory_format=torch.channels_last)
+    pipe.vae.to(memory_format=torch.channels_last)
+    pipe.unet = torch.compile(
+      pipe.unet, 
+      fullgraph=True, 
+      mode="max-autotune-no-cudagraphs"
+    )
 
-  pipe.text_encoder = torch.compile(
-    pipe.text_encoder,
-    fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
-  )
+    pipe.text_encoder = torch.compile(
+      pipe.text_encoder,
+      fullgraph=True,
+      mode="max-autotune-no-cudagraphs",
+    )
 
-  pipe.vae.decoder = torch.compile(
-    pipe.vae.decoder,
-    fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
-  )
+    pipe.vae.decoder = torch.compile(
+      pipe.vae.decoder,
+      fullgraph=True,
+      mode="max-autotune-no-cudagraphs",
+    )
 
-  pipe.vae.post_quant_conv = torch.compile(
-    pipe.vae.post_quant_conv,
-    fullgraph=True,
-    mode="max-autotune-no-cudagraphs",
-  )
+    pipe.vae.post_quant_conv = torch.compile(
+      pipe.vae.post_quant_conv,
+      fullgraph=True,
+      mode="max-autotune-no-cudagraphs",
+    )
   pipe.enable_attention_slicing()
 
 def text2img(prompt):
