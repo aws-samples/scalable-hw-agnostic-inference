@@ -179,6 +179,8 @@ Finally, we generated a load simulator to load the ALB ingress endpoint and obse
 | L4          | Triton   | 0.91 sec                                       | Acceptable      | `k8s-default-sd21g6tr-4512700df4` |
 | A10G        | Cuda     | 1.34 sec                                       | Unacceptable    | `k8s-default-sd21g5cu-2ea1613e96` |
 
+![optimal throughput](/multi-accel-sdk-latency-throughput-24hrs.png)
+
 Next steps are:
 1/ Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
 2/ Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
