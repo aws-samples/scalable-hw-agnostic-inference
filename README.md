@@ -180,6 +180,9 @@ Finally, we simulated load on the ALB ingress endpoint and observed the workload
 | A10G        | Cuda     | 1.34 sec                                       | Unacceptable    | `k8s-default-sd21g5cu-2ea1613e96` |
 
 ![optimal throughput](/multi-accel-sdk-latency-throughput-24hrs.png)
+![optimal throughput](/multi-accel-sdk-pods-24hrs.png)
+![optimal throughput](/multi-accel-sdk-nodes-24hrs.png)
+![optimal throughput](/multi-accel-sdk-gpu-neuron-util-24hrs.png)
 
 Next steps are:
 - Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
