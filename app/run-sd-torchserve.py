@@ -61,7 +61,7 @@ class DiffusersHandler(BaseHandler, ABC):
         fullgraph=True,
         mode="max-autotune-no-cudagraphs",
       )
-    '''
+      '''
     self.pipe.enable_attention_slicing()
     self.pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipe.scheduler.config)
 

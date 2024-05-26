@@ -14,15 +14,15 @@ if [ -z "$instance_type" ]; then
 fi
 echo "instance_type="$instance_type
 
-if [[ $instance_type == "inf"* ]]; then
-  echo "export PATH=/opt/aws/neuron/bin:\$PATH" >> /root/.bashrc
-  echo "export TERM=screen" >> /root/.bashrc
-  echo "export DEVICE=xla" >> /root/.bashrc
-fi
-if [[ $instance_type == "g"* ]]; then
-  echo "export DEVICE=cuda" >> /root/.bashrc
-fi
-. /root/.bashrc
+#if [[ $instance_type == "inf"*  ||  $instance_type == "trn"* ]]; then
+#  echo "export PATH=/opt/aws/neuron/bin:\$PATH" >> /root/.bashrc
+#  echo "export TERM=screen" >> /root/.bashrc
+#  echo "export DEVICE=xla" >> /root/.bashrc
+#fi
+#if [[ $instance_type == "g"* ]]; then
+#  echo "export DEVICE=cuda" >> /root/.bashrc
+#fi
+#. /root/.bashrc
 
 if [[ $STAGE == "compile" ]]; then
   /compile-model.sh
