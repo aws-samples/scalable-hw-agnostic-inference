@@ -78,7 +78,7 @@ io = gr.Interface(fn=text2img,inputs=["text"],
 
 @app.get("/")
 def read_main():
-  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /serve"}
+  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /serve or /load/1"}
 
 @app.get("/health")
 def healthy():
@@ -88,7 +88,7 @@ def healthy():
 def ready():
   return {"message": pod_name + "is ready"}
 
-@app.get("/load/infer/{n_inf}")
+@app.get("/load/{n_inf}")
 def load(n_inf: int):
   prompt = "a photo of an astronaut riding a horse on mars"
   num_inference_steps = n_inf
