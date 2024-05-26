@@ -169,7 +169,7 @@ Next, we determined the `targetMetricValue` that defines the maximum throughput 
 
 We set the `targetMetricValue` for both GPUs, Inf2, and Trn1 KEDA `scaledobjects`. Specifically, 65 RPM for Trn1, 62 RPM for Inf2, 59 RPM for L4/Triton, and 74 RPM for A10G/Triton. 
 
-Finally, we generated a load simulator to load the ALB ingress endpoint and observed the workload distribution among the accelerator-SDK-based target groups. We noticed homogeneous throughput with consistent inference latency per variant. The observed latencies are as follows:
+Finally, we simulated load on the ALB ingress endpoint and observed the workload distribution among the accelerator-SDK-based target groups. We noticed uniform throughput with consistent inference latency for each variant. The observed latencies are as follows:
 
 | Accelerator | SDK      | p90 Throughput (`HTTPCode_Target_2XX_Count`)   | Latency Level   | K8s target group                  |
 |-------------|----------|------------------------------------------------|-----------------|-----------------------------------|
@@ -182,6 +182,6 @@ Finally, we generated a load simulator to load the ALB ingress endpoint and obse
 ![optimal throughput](/multi-accel-sdk-latency-throughput-24hrs.png)
 
 Next steps are:
-1/ Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
-2/ Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
-3/ Watch the priorities begin applied for optimal cost and performance 
+- Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
+- Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
+- Watch the priorities begin applied for optimal cost and performance 
