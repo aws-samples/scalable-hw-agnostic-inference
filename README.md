@@ -157,19 +157,29 @@ spec:
 We initially wanted to test the quality of the generated images by sampling the web app. Below are two examples:
 ![alt_text](/gpu-gradio-sample.png)
 ![alt_text](/inf-gradio-sample.png)
-We loaded the inference service using a simple synthetic loader that controls the number of inference calls based on a sine function distribution. Below are the run-time performance results after we tuned KEDA and Karpenter:
-![alt_text](/aws-gpu-neuron-eks-sample-perf.png)
-![alt_text](/aws-gpu-neuron-eks-sample-perf2.png)
 
-Next, we determined the `targetMetricValue` that defines the maximum throughput a single accelerator can process using SDKs such as Neuron, CUDA, and Triton. We measured maximum throughput by the processed load (CloudWatch metric `HTTPCode_Target_2XX_Count`) while ensuring latency remained at acceptable levels. Below are the load tests we conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores.
+Next, we determined the `targetMetricValue` that defines the maximum throughput a single accelerator can process using SDKs such as Neuron, CUDA, and Triton. We measured maximum throughput by the processed load (CloudWatch metric `HTTPCode_Target_2XX_Count`) while ensuring latency remained at acceptable levels. Below are the load tests we conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores. We skiped the default CUDA compiler becasue the minimal latency requirements did not met. 
 ![Establish Inf2 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
 
 ![Establish Trn1 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
 
-We set the `targetMetricValue` for both GPUs, Inf2, and Trn1 KEDA `scaledobjects`. However, we encountered application errors, prompting us to adjust the throughput per pod and compute. Below are the results that indicate HTTP 500 errors in the GPU calls.
+![Establish A10G core with triton max throughput](/a10g-core-load-sd2-latency-throughput.png)
 
-![alt_text](/gpu-inf-http-200-500-load.png)
-We compared the results with the model inference logs and the core utilization and observe that `targetMetricValue=100` satrurated the GPU core faster than the Inf2 core so we decrease the `targetMetricValue` for GPU. 
-![alt_text](/pod-inf-gpu-utilization.png)
+![Establish L4 core with triton max throughput](/l4-triton-core-load-sd2-latency-throughput.png)
 
+We set the `targetMetricValue` for both GPUs, Inf2, and Trn1 KEDA `scaledobjects`. Specifically, 65 RPM for Trn1, 62 RPM for Inf2, 59 RPM for L4/Triton, and 74 RPM for A10G/Triton. 
 
+Finally, we generated a load simulator to load the ALB ingress endpoint and observed the workload distribution among the accelerator-SDK-based target groups. We noticed homogeneous throughput with consistent inference latency per variant. The observed latencies are as follows:
+
+| Accelerator | SDK      | p90 Throughput (`HTTPCode_Target_2XX_Count`)   | Latency Level   | K8s target group                  |
+|-------------|----------|------------------------------------------------|-----------------|-----------------------------------|
+| Trn1        | Neuron   | 0.83 sec                                       | Acceptable      | `k8s-default-sd21trn1-14ba69eb11` |
+| A10G        | Triton   | 0.83 sec                                       | Acceptable      | `k8s-default-sd21g5tr-74cfcd12bf` |
+| Inf2        | Neuron   | 0.89 sec                                       | Acceptable      | `k8s-default-sd21inf2-3e2ecded08` |
+| L4          | Triton   | 0.91 sec                                       | Acceptable      | `k8s-default-sd21g6tr-4512700df4` |
+| A10G        | Cuda     | 1.34 sec                                       | Unacceptable    | `k8s-default-sd21g5cu-2ea1613e96` |
+
+Next steps are:
+1/ Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
+2/ Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
+3/ Watch the priorities begin applied for optimal cost and performance 
