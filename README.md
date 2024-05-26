@@ -181,7 +181,6 @@ Finally, we simulated load on the ALB ingress endpoint and observed the workload
 
 ![optimal throughput](/multi-accel-sdk-latency-throughput-24hrs.png)
 ![optimal throughput](/multi-accel-sdk-pods-24hrs.png)
-![optimal throughput](/multi-accel-sdk-nodes-24hrs.png)
 ![optimal throughput](/multi-accel-sdk-gpu-neuron-util-24hrs.png)
 
 Next steps are:
