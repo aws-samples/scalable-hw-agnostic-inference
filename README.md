@@ -184,4 +184,4 @@ Finally, we simulated load on the ALB ingress endpoint and observed the workload
 Next steps are:
 - Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
 - Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
-- Watch the priorities begin applied for optimal cost and performance 
+- Watch the priorities being applied for optimal cost and performance 
