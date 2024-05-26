@@ -161,7 +161,13 @@ We loaded the inference service using a simple synthetic loader that controls th
 ![alt_text](/aws-gpu-neuron-eks-sample-perf.png)
 ![alt_text](/aws-gpu-neuron-eks-sample-perf2.png)
 
-Initially, we set the targetMetricValue=100 for both GPU and Inf2 options. However, we encountered application errors, prompting us to adjust the throughput per pod and compute. Below are the results that indicate HTTP 500 errors in the GPU calls.
+Next, we determined the `targetMetricValue` that defines the maximum throughput a single accelerator can process using SDKs such as Neuron, CUDA, and Triton. We measured maximum throughput by the processed load (CloudWatch metric `HTTPCode_Target_2XX_Count`) while ensuring latency remained at acceptable levels. Below are the load tests we conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores.
+![Establish Inf2 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
+
+![Establish Trn1 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
+
+We set the `targetMetricValue` for both GPUs, Inf2, and Trn1 KEDA `scaledobjects`. However, we encountered application errors, prompting us to adjust the throughput per pod and compute. Below are the results that indicate HTTP 500 errors in the GPU calls.
+
 ![alt_text](/gpu-inf-http-200-500-load.png)
 We compared the results with the model inference logs and the core utilization and observe that `targetMetricValue=100` satrurated the GPU core faster than the Inf2 core so we decrease the `targetMetricValue` for GPU. 
 ![alt_text](/pod-inf-gpu-utilization.png)
