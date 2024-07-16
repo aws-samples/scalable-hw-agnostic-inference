@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sd21-g5-triton-serve
+spec:
+  selector:
+    app: sd21-g5-triton-serve
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: NodePort
