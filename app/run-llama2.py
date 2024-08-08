@@ -23,6 +23,8 @@ if device=='xla':
 elif device=='cuda': 
   model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map="auto")
 
+tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
+
 def gentext(prompt):
   start_time = time.time()
   inputs = tokenizer(prompt, return_tensors="pt")
