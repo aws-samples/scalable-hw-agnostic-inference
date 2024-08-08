@@ -40,7 +40,7 @@ io = gr.Interface(fn=gentext,inputs=["text"],
 
 @app.get("/")
 def read_main():
-  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
+  return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
 
 @app.get("/health")
 def healthy():
