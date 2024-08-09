@@ -22,7 +22,7 @@ if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(model_id)
 elif device=='cuda': 
   #model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map="auto")
-  model = AutoModelForCausalLM.from_pretrained(model_id,device_map = 'cuda')
+  model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map = 'cuda')
 
 tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
