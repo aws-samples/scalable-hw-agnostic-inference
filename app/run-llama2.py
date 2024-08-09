@@ -13,7 +13,7 @@ device=os.environ["DEVICE"]
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
-elif device=='cuda' or device=='triton':
+elif device=='cuda':
   from transformers import AutoModelForCausalLM
 
 from transformers import AutoTokenizer
@@ -21,7 +21,8 @@ from transformers import AutoTokenizer
 if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(model_id)
 elif device=='cuda': 
-  model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map="auto")
+  #model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map="auto")
+  model = AutoModelForCausalLM.from_pretrained(model_id,device_map = 'cuda')
 
 tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
