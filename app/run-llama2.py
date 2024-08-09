@@ -16,7 +16,7 @@ if device=='xla':
 elif device=='cuda':
   from transformers import AutoModelForCausalLM
 
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer,BitsAndBytesConfig
 
 if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(model_id)
