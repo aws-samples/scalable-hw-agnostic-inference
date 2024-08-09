@@ -28,8 +28,7 @@ tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 def gentext(prompt):
   start_time = time.time()
   inputs = tokenizer(prompt, return_tensors="pt")
-  model_args={'prompt': prompt,max_new_tokens: 128,do_sample: True,temperature: 0.9,top_k: 50,top_p: 0.9}
-  outputs = model(**model_args)
+  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,temperature=0.9,top_k=50,top_p=0.9)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
