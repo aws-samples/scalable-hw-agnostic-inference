@@ -26,13 +26,13 @@ tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(model_id,quantization_config=quantization_config)
 elif device=='cuda': 
-  model = AutoModelForCausalLM.from_pretrained(model_id,torch_dtype=torch.float16,quantization_config=quantization_config,).to('cuda')
+  model = AutoModelForCausalLM.from_pretrained(model_id,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
 
 
 def gentext(prompt):
   start_time = time.time()
   inputs = tokenizer(prompt, return_tensors="pt")
-  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,temperature=0.9,top_k=50,top_p=0.9)
+  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,temperature=0.7,top_k=50,top_p=0.9)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
