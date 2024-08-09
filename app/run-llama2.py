@@ -13,7 +13,7 @@ device=os.environ["DEVICE"]
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
-  from transformers_neuronx import NeuronConfig
+  from transformers_neuronx import NeuronConfig,QuantizationConfig
   quantization_config = NeuronConfig(quant=QuantizationConfig(quant_dtype='s8',dequant_dtype='bf16'))
 elif device=='cuda':
   from transformers import AutoModelForCausalLM,BitsAndBytesConfig
