@@ -13,20 +13,21 @@ device=os.environ["DEVICE"]
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
+  from transformers_neuronx import NeuronConfig
+  quantization_config = NeuronConfig(quant=QuantizationConfig(quant_dtype='s8',dequant_dtype='bf16'))
 elif device=='cuda':
-  from transformers import AutoModelForCausalLM
+  from transformers import AutoModelForCausalLM,BitsAndBytesConfig
+  quantization_config = BitsAndBytesConfig(llm_int8_threshold=200.0,load_in_8bit=True)
 
-from transformers import AutoTokenizer,BitsAndBytesConfig
+from transformers import AutoTokenizer
 
-quantization_config = BitsAndBytesConfig(llm_int8_threshold=200.0,load_in_8bit=True)
+tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
 if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(model_id,quantization_config=quantization_config)
 elif device=='cuda': 
-  #model = AutoModelForCausalLM.from_pretrained(model_id,load_in_8bit=True,device_map="auto")
-  model = AutoModelForCausalLM.from_pretrained(model_id,torch_dtype=torch.float16,device_map = 'auto',quantization_config=quantization_config,)
+  model = AutoModelForCausalLM.from_pretrained(model_id,torch_dtype=torch.float16,quantization_config=quantization_config,).to('cuda')
 
-tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
 def gentext(prompt):
   start_time = time.time()
