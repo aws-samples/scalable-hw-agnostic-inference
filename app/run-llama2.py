@@ -21,13 +21,6 @@ from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
-if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(model_id)
-elif device=='cuda': 
-  model = AutoModelForCausalLM.from_pretrained(model_id,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
-  model = torch.compile(model, backend="inductor")
-  gentext("write a poem")
-
 def gentext(prompt):
   start_time = time.time()
   inputs = tokenizer(prompt, return_tensors="pt")
@@ -36,6 +29,14 @@ def gentext(prompt):
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
   return str(response), str(total_time)
+
+if device=='xla':
+  model = NeuronModelForCausalLM.from_pretrained(model_id)
+elif device=='cuda': 
+  model = AutoModelForCausalLM.from_pretrained(model_id,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
+  model = torch.compile(model, backend="inductor")
+  gentext("write a poem")
+
 
 app = FastAPI()
 io = gr.Interface(fn=gentext,inputs=["text"],
