@@ -13,8 +13,6 @@ device=os.environ["DEVICE"]
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
-  from transformers_neuronx import NeuronConfig,QuantizationConfig
-  quantization_config = NeuronConfig(quant=QuantizationConfig(quant_dtype='s8',dequant_dtype='bf16'))
 elif device=='cuda':
   from transformers import AutoModelForCausalLM,BitsAndBytesConfig
   quantization_config = BitsAndBytesConfig(llm_int8_threshold=200.0,load_in_8bit=True)
@@ -24,7 +22,7 @@ from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
 
 if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(model_id,quantization_config=quantization_config)
+  model = NeuronModelForCausalLM.from_pretrained(model_id)
 elif device=='cuda': 
   model = AutoModelForCausalLM.from_pretrained(model_id,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
 
