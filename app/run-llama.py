@@ -6,20 +6,27 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
+from huggingface_hub.hf_api import HfFolder
+from huggingface_hub import login
 
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
+compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device=os.environ["DEVICE"]
+hf_token=os.environ['HUGGINGFACE_TOKEN']
+
+HfFolder.save_token(hf_token)
+login(hf_token)
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
 elif device=='cuda':
   from transformers import AutoModelForCausalLM,BitsAndBytesConfig
-  quantization_config = BitsAndBytesConfig(llm_int8_threshold=200.0,load_in_8bit=True)
+  quantization_config = BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.float16)
 
 from transformers import AutoTokenizer
 
-tokenizer = AutoTokenizer.from_pretrained("NousResearch/Llama-2-13b-chat-hf")
+tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 def gentext(prompt):
   start_time = time.time()
@@ -28,18 +35,18 @@ def gentext(prompt):
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
 
-  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,temperature=0.7,top_k=50,top_p=0.9)
+  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
   return str(response), str(total_time)
 
 if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(model_id)
+  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True)
 elif device=='cuda': 
-  model = AutoModelForCausalLM.from_pretrained(model_id,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
-  model = torch.compile(model, backend="inductor")
-  gentext("write a poem")
+  model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
+  
+gentext("write a poem")
 
 
 app = FastAPI()
