@@ -16,7 +16,7 @@ device=os.environ["DEVICE"]
 hf_token=os.environ['HUGGINGFACE_TOKEN']
 
 HfFolder.save_token(hf_token)
-login(hf_token)
+login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
