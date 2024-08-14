@@ -9,5 +9,5 @@ if [ "$(uname -i)" = "x86_64" ]; then
     pip install nvitop bitsandbytes accelerate protobuf --no-cache-dir transformers sentencepiece
   fi
   cd ..
-  uvicorn run-llama2:app --host=0.0.0.0
+  uvicorn run-llama:app --host=0.0.0.0
 fi
