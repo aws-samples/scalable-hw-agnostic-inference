@@ -6,7 +6,6 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
-from huggingface_hub.hf_api import HfFolder
 from huggingface_hub import login
 
 pod_name=os.environ['POD_NAME']
@@ -14,7 +13,8 @@ model_id=os.environ['MODEL_ID']
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device=os.environ["DEVICE"]
 hf_token=os.environ['HUGGINGFACE_TOKEN']
-print("type(hf_token)="+str(type(hf_token)))
+max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
+
 login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
@@ -34,7 +34,7 @@ def gentext(prompt):
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
 
-  outputs = model.generate(**inputs,max_new_tokens=128,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+  outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
