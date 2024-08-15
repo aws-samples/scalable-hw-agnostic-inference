@@ -41,7 +41,7 @@ def gentext(prompt):
   return str(response), str(total_time)
 
 if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True,use_auth_token=hf_token)
+  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True)
 elif device=='cuda': 
   model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
   
