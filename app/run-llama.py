@@ -57,6 +57,10 @@ io = gr.Interface(fn=gentext,inputs=["text"],
 def read_main():
   return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
 
+@app.get("/jonathan")
+def hifromjonathan():
+  retrun {"message": "Hello from Jonathan"}
+
 @app.get("/health")
 def healthy():
   return {"message": pod_name + "is healthy"}
