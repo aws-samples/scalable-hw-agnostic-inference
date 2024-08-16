@@ -59,7 +59,7 @@ def read_main():
 
 @app.get("/jonathan")
 def hifromjonathan():
-  retrun {"message": "Hello from Jonathan"}
+  return {"message": "Hello from Jonathan"}
 
 @app.get("/health")
 def healthy():
