@@ -65,7 +65,8 @@ class Item(BaseModel):
 
 @app.post("/gentext")
 def generate_text_post(item: Item):
-  return {"message": "prompt is "+item.prompt}
+  item.response,item.latency=gentext(item.prompt)
+  return {"prompt":item.prompt,"response":item.response,"latency":item.latency}
 
 @app.get("/health")
 def healthy():
