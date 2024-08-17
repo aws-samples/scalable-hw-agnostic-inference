@@ -7,6 +7,7 @@ from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
 from huggingface_hub import login
+from pydantic import BaseModel
 
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
@@ -57,9 +58,14 @@ io = gr.Interface(fn=gentext,inputs=["text"],
 def read_main():
   return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf}; /gentext http post with user prompt "}
 
+class Item(BaseModel):
+  prompt: str
+  response: str
+  latency: float
+
 @app.post("/gentext")
-def generate_text_post(prompt: str):
-  return {"message": "prompt is "+prompt}
+def generate_text_post(item: Item):
+  return {"message": "prompt is "+item.prompt}
 
 @app.get("/health")
 def healthy():
