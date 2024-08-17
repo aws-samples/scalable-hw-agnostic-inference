@@ -93,8 +93,8 @@ def ready():
 
 class Item(BaseModel):
   prompt: str
-  response: Image | None = None
-  latency: float | None = None
+  response: Image = None
+  latency: float = 0.0
 
 @app.post("/genimage")
 def generate_text_post(item: Item):
