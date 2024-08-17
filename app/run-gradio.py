@@ -96,6 +96,7 @@ class Item(BaseModel):
   prompt: str
   response: Optional[Image.Image]=None
   latency: float = 0.0
+  model_config = ConfigDict(arbitrary_types_allowed=True)
 
 @app.post("/genimage")
 def generate_text_post(item: Item):
