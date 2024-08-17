@@ -55,7 +55,11 @@ io = gr.Interface(fn=gentext,inputs=["text"],
 
 @app.get("/")
 def read_main():
-  return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
+  return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf}; /gentext http post with user prompt "}
+
+@app.post("/gentext")
+def generate_text_post(prompt: str):
+  return {"message": "prompt is "+prompt}
 
 @app.get("/health")
 def healthy():
