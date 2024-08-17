@@ -7,6 +7,7 @@ from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
 from pydantic import BaseModel
+from typing import Optional
 from PIL import Image
 
 pod_name=os.environ['POD_NAME']
@@ -93,7 +94,7 @@ def ready():
 
 class Item(BaseModel):
   prompt: str
-  response: Image = None
+  response: Optional[Image.Image]=None
   latency: float = 0.0
 
 @app.post("/genimage")
