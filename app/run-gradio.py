@@ -6,6 +6,11 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
+from pydantic import BaseModel,ConfigDict
+from typing import Optional
+from PIL import Image
+import base64
+from io import BytesIO
 
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
@@ -69,6 +74,7 @@ def text2img(prompt):
 prompt="portrait photo of a old warrior chief"
 model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
 image = pipe(**model_args).images[0]
+print("type(pipe(**model_args).images[0]):"+str(type(pipe(**model_args).images[0])))
 
 app = FastAPI()
 
@@ -87,6 +93,22 @@ def healthy():
 @app.get("/readiness")
 def ready():
   return {"message": pod_name + "is ready"}
+
+class Item(BaseModel):
+  prompt: str
+  response: Optional[Image.Image]=None
+  latency: float = 0.0
+  model_config = ConfigDict(arbitrary_types_allowed=True)
+
+@app.post("/genimage")
+def generate_text_post(item: Item):
+  item.response,item.latency=text2img(item.prompt)
+  img=item.response
+  buffered = BytesIO()
+  img.save(buffered, format="PNG")
+  img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+
 
 @app.get("/load/{n_inf}")
 def load(n_inf: int):
