@@ -60,8 +60,8 @@ def read_main():
 
 class Item(BaseModel):
   prompt: str
-  response: str | None = None
-  latency: float | None = None
+  response: str=None
+  latency: float=0.0
 
 @app.post("/gentext")
 def generate_text_post(item: Item):
