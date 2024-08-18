@@ -9,6 +9,8 @@ import torch
 from pydantic import BaseModel,ConfigDict
 from typing import Optional
 from PIL import Image
+import base64
+from io import BytesIO
 
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
@@ -101,7 +103,11 @@ class Item(BaseModel):
 @app.post("/genimage")
 def generate_text_post(item: Item):
   item.response,item.latency=text2img(item.prompt)
-  return {"prompt":item.prompt,"response":item.response,"latency":item.latency}
+  img=item.response
+  buffered = BytesIO()
+  img.save(buffered, format="PNG")
+  img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
 
 
 @app.get("/load/{n_inf}")
