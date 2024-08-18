@@ -6,7 +6,7 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 from typing import Optional
 from PIL import Image
 
