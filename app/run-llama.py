@@ -27,6 +27,7 @@ elif device=='cuda':
 from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer.pad_token_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 
 def gentext(prompt):
   start_time = time.time()
