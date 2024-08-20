@@ -43,7 +43,8 @@ def gentext(prompt):
 
 def classify_sentiment(prompt):
   response,total_time=gentext(f"Classify the sentiment of the following text as positive, negative, or neutral:\n\n{prompt}\n\nSentiment:")
-  return response,total_time
+  sentiment = response.split("Sentiment:")[-1].strip()
+  return sentiment,total_time
 
 if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True)
