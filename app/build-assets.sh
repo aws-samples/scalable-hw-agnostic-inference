@@ -27,6 +27,20 @@ if [ "$IMAGE_TAG" == "amd64-cuda" ]; then
   aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BASE_REPO
   docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BASE_REPO:$DLC_CUDA_TAG
 fi
+DLC_ARM_CPU_IMAGE="pytorch-inference-graviton"
+DLC_ARM_CPU_TAG=$BASE_IMAGE_TAG
+DLC_ARM_CPU_ECR=$DLC_ECR_ACCOUNT".dkr.ecr.us-east-1.amazonaws.com"
+if [ "$IMAGE_TAG" == "aarch64-cpu" ]; then
+  docker logout
+  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $DLC_ARM_CPU_ECR
+  docker pull $DLC_ARM_CPU_ECR/$DLC_ARM_CPU_IMAGE:$DLC_ARM_CPU_TAG
+  dlc_arm_cpu_image_id=$(docker images | grep $DLC_ECR_ACCOUNT | grep $DLC_ARM_CPU_TAG | awk '{print $3}')
+  docker tag $dlc_arm_cpu_image_id $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BASE_REPO:$DLC_ARM_CPU_TAG
+  docker logout
+  aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BASE_REPO
+  docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$BASE_REPO:$DLC_ARM_CPU_TAG
+fi
+
 docker images
 
 ASSETS="-assets"
