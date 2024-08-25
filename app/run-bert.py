@@ -55,7 +55,7 @@ classify_sentiment("Hamilton is overrated and fails to live up to the hype as th
 
 
 app = FastAPI()
-io = gr.Interface(fn=gentext,inputs=["text"],
+io = gr.Interface(fn=classify_sentiment,inputs=["text"],
     outputs = ["text","text"],
     title = model_id + ' in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
 
