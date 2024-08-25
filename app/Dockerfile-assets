@@ -17,8 +17,8 @@ ADD config /root/.aws
 FROM base AS assets-amd64-cuda
 ENV VAR=cuda
 
-FROM base AS assets-arm64-cuda
-ENV VAR=cuda
+FROM base AS assets-arm64-cpu
+ENV VAR=cpu
 
 FROM base AS assets-amd64-neuron
 ENV VAR=xla
