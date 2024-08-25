@@ -11,7 +11,7 @@ if [ "$(uname -i)" = "x86_64" ]; then
   fi
 elif [ "$(uname -i)" = "aarch64" ]; then
   if [ "$DEVICE" == "cpu" ]; then
-    echo "aarch64 cpu placeholder"
+    python3 -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 diffusers transformers accelerate
   fi
 fi
 uvicorn run-bert:app --host=0.0.0.0
