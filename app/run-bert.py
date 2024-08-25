@@ -14,48 +14,48 @@ model_id=os.environ['MODEL_ID']
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device=os.environ["DEVICE"]
 hf_token=os.environ['HUGGINGFACE_TOKEN']
-max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
 login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
-  from optimum.neuron import NeuronModelForCausalLM
+  from optimum.neuron import NeuronModelForSequenceClassification
 elif device=='cuda':
-  from transformers import AutoModelForCausalLM,BitsAndBytesConfig
-  quantization_config = BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.float16)
+  from transformers import AutoModelForSequenceClassification
+elif device=='cpu': 
+  from transformers import AutoModelForSequenceClassification
 
 from transformers import AutoTokenizer
 
+model = AutoModelForSequenceClassification.from_pretrained(model_id)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
-tokenizer.pad_token_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 
-def gentext(prompt):
+def classify_sentiment(prompt):
   start_time = time.time()
   if device=='xla':
     inputs = tokenizer(prompt, return_tensors="pt")
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
-  outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
-  outputs = outputs[0, inputs.input_ids.size(-1):]
-  response = tokenizer.decode(outputs, skip_special_tokens=True)
+  elif device=='cpu':
+    inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
+  
+  logits = model(**inputs).logits 
+  sentiment = model.config.id2label[logits.argmax().item()]
   total_time =  time.time()-start_time
-  return str(response), str(total_time)
-
-def classify_sentiment(prompt):
-  response,total_time=gentext(f"Classify the sentiment of the following text as positive, negative, or neutral:\n\n{prompt}\n\nSentiment:")
-  sentiment = response.split("Sentiment:")[-1].strip()
   return sentiment,total_time
 
 if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True)
+  model=NeuronModelForSequenceClassification.from_pretrained(compiled_model_id)
 elif device=='cuda': 
-  model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
+  model=AutoModelForSequenceClassification.from_pretrained(model_id)
+elif device=='cpu': 
+  model=AutoModelForSequenceClassification.from_pretrained(model_id)
   
-gentext("write a poem")
+classify_sentiment("Hamilton is widely celebrated as the best musical of recent years, captivating audiences with its brilliant blend of history, hip-hop, and powerful storytelling.")
+classify_sentiment("Hamilton is overrated and fails to live up to the hype as the best musical of past years.")
 
 
 app = FastAPI()
-io = gr.Interface(fn=gentext,inputs=["text"],
+io = gr.Interface(fn=classify_sentiment,inputs=["text"],
     outputs = ["text","text"],
     title = model_id + ' in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
 
@@ -67,11 +67,6 @@ class Item(BaseModel):
   prompt: str
   response: str=None
   latency: float=0.0
-
-@app.post("/gentext")
-def generate_text_post(item: Item):
-  item.response,item.latency=gentext(item.prompt)
-  return {"prompt":item.prompt,"response":item.response,"latency":item.latency}
 
 @app.post("/sentiment")
 def classify_text_post(item: Item):
