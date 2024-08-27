@@ -28,8 +28,8 @@ if [[ $STAGE == "compile" ]]; then
   /compile-model.sh
 elif [[ $STAGE == "run" ]]; then
   /run-model.sh
-elif [[ $STAGE == "run-gradio" ]]; then
-  /run-gradio.sh
+elif [[ $STAGE == "run-sd" ]]; then
+  /run-sd.sh
 else
  echo "stage " $STAGE" is not supported"
  exit

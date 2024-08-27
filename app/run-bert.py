@@ -13,7 +13,7 @@ pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device=os.environ["DEVICE"]
-hf_token=os.environ['HUGGINGFACE_TOKEN']
+hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 
 login(hf_token,add_to_git_credential=True)
 
@@ -26,8 +26,6 @@ elif device=='cpu':
 
 from transformers import AutoTokenizer
 
-model = AutoModelForSequenceClassification.from_pretrained(model_id)
-tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 def classify_sentiment(prompt):
   start_time = time.time()
@@ -50,6 +48,8 @@ elif device=='cuda':
 elif device=='cpu': 
   model=AutoModelForSequenceClassification.from_pretrained(model_id)
   
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
 classify_sentiment("Hamilton is widely celebrated as the best musical of recent years, captivating audiences with its brilliant blend of history, hip-hop, and powerful storytelling.")
 classify_sentiment("Hamilton is overrated and fails to live up to the hype as the best musical of past years.")
 

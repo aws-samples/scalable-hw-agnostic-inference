@@ -9,5 +9,5 @@ if [ "$(uname -i)" = "x86_64" ]; then
     pip install diffusers transformers accelerate safetensors matplotlib Pillow ipython torch -U
     pip install click nvitop
   fi
-  uvicorn run-gradio:app --host=0.0.0.0 
+  uvicorn run-sd:app --host=0.0.0.0 
 fi

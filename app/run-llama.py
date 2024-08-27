@@ -13,7 +13,7 @@ pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device=os.environ["DEVICE"]
-hf_token=os.environ['HUGGINGFACE_TOKEN']
+hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
 login(hf_token,add_to_git_credential=True)
