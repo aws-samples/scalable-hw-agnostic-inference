@@ -2,45 +2,28 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: sd21-inf2-serve
-  name: sd21-inf2-serve
+    app: sd-inf
+  name: sd-inf
 spec:
   selector:
     matchLabels:
-      app: sd21-inf2-serve
+      app: sd-inf
   template:
     metadata:
       labels:
-        app: sd21-inf2-serve
+        app: sd-inf
     spec:
       nodeSelector:
         karpenter.sh/nodepool: amd-neuron
       #serviceAccountName: appsimulator
-      #schedulerName: my-scheduler
+      schedulerName: my-scheduler
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
-      #initContainers:
-      #- name: pull-model-tar
-      #  image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-neuron-assets
-      #  imagePullPolicy: Always
-      #  volumeMounts:
-      #  - name: workdir
-      #    mountPath: /model
-      #  command:
-      #  - /bin/bash
-      #  - "-exc"
-      #  - |
-      #    set -x
-      #    #aws s3 cp s3://sdinfer1/stable-diffusion-2-1-base.tar.gz /model/model.tar.gz
-      #    aws s3 cp s3://sdinfer1/stable-diffusion-2-1_xla_bsize_1.tar.gz /model/model.tar.gz
-      #    cd /model
-      #    tar -xzf /model/model.tar.gz
-      #    ls -l
       containers:
       - name: app
-        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
@@ -54,13 +37,6 @@ spec:
             aws.amazon.com/neuron: 1
           limits:
             aws.amazon.com/neuron: 1
-        #lifecycle:
-        #  postStart:
-        #    exec:
-        #      command: ["/create_node_port_svc.sh"]
-        #  preStop:
-        #    exec:
-        #      command: ["/bin/sh","-c","kubectl delete svc `kubectl get svc|grep $POD_NAME | awk '{print $1}'`"]
         env:
         - name: DEVICE
           value: "xla"
