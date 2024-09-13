@@ -36,13 +36,13 @@ metadata:
   name: amd-nvidia
 spec:
   amiFamily: AL2 
-  role: "KarpenterNodeRole-demo"
+  role: "KarpenterNodeRole-jon-karpenter-demo"
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/subnet/discovery: "demo-public"
+        karpenter.sh/discovery: "jon-karpenter-demo"
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: "demo"
+        karpenter.sh/discovery: "jon-karpenter-demo"
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
