@@ -1,55 +1,59 @@
-Create an EKS Cluster with Karpenter
+# Stable Diffusion 2.1 on EKS with Nvidia GPU's
+
+## Create an EKS Cluster with Karpenter
 
 * The first step is to create an EKS cluster with Karpenter installed. Follow the Karpenter docs to do so. 
 
 
-Install AWS Load Balancer Controller
+## Set Karpenter Environment Variables
+
+* These variables are created after following the EKS Cluster creation with Karpenter step. We will be exporting these variables to our terminal using the export command, export KarpenterNodeRole=[Fill in Here] and export KarpenterDiscoveryTag=[Fill in Here]. 
+* Find the KarpenterNodeRole in the IAM roles console, it will follow a format similar to: KarpenterNodeRole-jon-karpenter-demo. The correct role will be KarpenterNodeRole-[EKS Cluster Name].
+* To find the KarpenterDiscoveryTag, either go to EC2 console, security groups, and filter through the tag with the key: karpenter.sh/discovery. Click on the right security group, then go to tags. OR go to VPC, subets, filter through the tag with the key: karpenter.sh/discovery. It will look something like jon-karpenter-demo as the value. 
+
+
+## Install AWS Load Balancer Controller
 
 * You can use the load balancer controller to expose your EKS apps to the internet. We will be creating a target group for the stable diffusion pod which we will cover in a later section within sd-gpu-svc.yaml. Follow this guide to install the Load Balancer Controller.
 
 
-Deploy NVIDIA Device Plugin
+## Deploy NVIDIA Device Plugin
 
 * We deploy the NVIDIA device plugin to enable you to schedule container workloads and it also manages GPUs as a resources. 
 * kubectl apply -f nvidia-device-plugin-daemonset.yaml
 
 
-Deploy Nodepool
+## Deploy Nodepool
 
 * Deploying a nodepool in Kubernetes is a group of nodes within a cluster that have the same configuration. Be sure to replace a few variables within this file.
-    * Make sure to adjust the spec.role, spec.subnetSelectorTerms.tags.karpenter..., and the spec.securityGroupSelectorTerms.tag.karpenter... 
-    * To find the spec.role, go into IAM roles and filter out by searching up KarpenterNodeRole... The correct role will be KarpenterNodeRole-[EKS Cluster Name].
-    * To find spec.securityGroupSelectorTerms.tags.karpenter..., go to EC2 console, security groups, and filter through the tag with the key: karpenter.sh/discovery. Click on the right security group, then go to tags.
-    * To find spec.subnetSelectorTerms.tags.karpenter..., go to VPC, subets, filter through the tag with the key: karpenter.sh/discovery.
-    * Make sure that all of these roles are correct and match the correct EKS cluster.
 * kubectl apply -f amd-nvidia-nodepool.yaml
 
 
-Deploy Stable Diffusion
+## Deploy Stable Diffusion
 
 * This file aims to deploy stable diffusion 2.1 onto an EKS pod. We will be using the envsubst command which replaces all variables in this file with environment variables, so make sure that the correct variables are set and align with the what will be replaced in the file.
 * cat sd-gpu-deply.yaml | envsubst | kubectl apply -f -
 
 
-Deploy Service
+## Deploy Service
 
 * We are deploying a service file called sd-gpu-svc.yaml focused on exposing an application running in our cluster. We define the service to expose port 80, and the pods to have a targetPort of 8000, meaning that the service will route traffic from port 80 on the service to port 8000 on the pods that match the label app:sd-gpu. 
 * kubectl apply -f sd-gpu-svc.yaml
 
 
-Deploy Ing
+## Deploy Ing
 
 * We will be deploying an ingress file called sd-gpu-ing.yaml which focuses on exposing HTTP routes from outside the cluster to services within the cluster. 
 * kubectl apply -f sd-gpu-ing.yaml
 
 
-Using Stable Diffusion 
+## Using Stable Diffusion 
 
 * The link is now available by running kubectl get ing. Copy and paste the address into your browser and you will be prompted by a Gradio interface that is connected to the EKS pod running Stable Diffusion 2.1. Enter your prompt and an image will be returned. Add /serve at the end of the address to view the interface.
 * kubectl get ing
 
 
-View GPU Utilization in Real Time 
+## View GPU Utilization in Real Time 
 
 * If you have the terminal next to the browser with Stable Diffusion open, you can view the GPU utilization in real time by logging into the pod and running nvitop.
     * kubectl exec -it sd-gpu-845c8bdc49-5wdc4 -- bash
@@ -58,7 +62,7 @@ View GPU Utilization in Real Time
     * exit
 
 
-Debugging Commands
+## Debugging Commands
 
 * kubectl get nodepool
 * kubectl get pods
