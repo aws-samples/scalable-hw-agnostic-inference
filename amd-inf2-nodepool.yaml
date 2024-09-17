@@ -29,13 +29,13 @@ metadata:
   name: amd-neuron
 spec:
   amiFamily: AL2 # Amazon Linux 2
-  role: "KarpenterNodeRole-tlvsummit-demo"
+  role: $KarpenterNodeRole
   subnetSelectorTerms:
     - tags:
-        karpenter.sh/subnet/discovery: "tlvsummit-demo-public"
+        karpenter.sh/discovery: $KarpenterDiscoveryTag
   securityGroupSelectorTerms:
     - tags:
-        karpenter.sh/discovery: "tlvsummit-demo" 
+        karpenter.sh/discovery: $KarpenterDiscoveryTag
   blockDeviceMappings:
     - deviceName: /dev/xvda
       ebs:
