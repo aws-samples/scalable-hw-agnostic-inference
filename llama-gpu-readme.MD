@@ -1,32 +1,4 @@
-<!-- # Stable Diffusion 2.1 on EKS with Nvidia GPU's -->
-
-<!-- ## Create an EKS Cluster with Karpenter
-
-* The first step is to create an EKS cluster with Karpenter installed. Follow the Karpenter docs to do so. 
-
-
-## Set Karpenter Environment Variables
-
-* These variables are created after following the EKS Cluster creation with Karpenter step. We will be exporting these variables to our terminal using the export command, export KarpenterNodeRole=[Fill in Here] and export KarpenterDiscoveryTag=[Fill in Here]. 
-* Find the KarpenterNodeRole in the IAM roles console, it will follow a format similar to: KarpenterNodeRole-jon-karpenter-demo. The correct role will be KarpenterNodeRole-[EKS Cluster Name].
-* To find the KarpenterDiscoveryTag, either go to EC2 console, security groups, and filter through the tag with the key: karpenter.sh/discovery. Click on the right security group, then go to tags. OR go to VPC, subets, filter through the tag with the key: karpenter.sh/discovery. It will look something like jon-karpenter-demo as the value. 
-
-
-## Install AWS Load Balancer Controller
-
-* You can use the load balancer controller to expose your EKS apps to the internet. We will be creating a target group for the stable diffusion pod which we will cover in a later section within sd-gpu-svc.yaml. Follow this guide to install the Load Balancer Controller.
-
-
-## Deploy NVIDIA Device Plugin
-
-* We deploy the NVIDIA device plugin to enable you to schedule container workloads and it also manages GPUs as a resources. 
-* kubectl apply -f nvidia-device-plugin-daemonset.yaml
-
-
-## Deploy Nvidia Nodepool
-
-* Deploying a nodepool in Kubernetes is a group of nodes within a cluster that have the same configuration. 
-* kubectl apply -f amd-nvidia-nodepool.yaml -->
+# Llama 3 8B on EKS with Nvidia GPU's
 
 ## Prerequisites
 
