@@ -32,7 +32,7 @@
 ## Deploy Stable Diffusion
 
 * This file aims to deploy stable diffusion 2.1 onto an EKS pod. We will be using the envsubst command which replaces all variables in this file with environment variables, so make sure that the correct variables are set and align with the what will be replaced in the file.
-* cat sd-gpu-deply.yaml | envsubst | kubectl apply -f -
+* cat sd-gpu-deploy.yaml | envsubst | kubectl apply -f -
 
 
 ## Deploy Service
