@@ -10,7 +10,7 @@ RUN apt-get update
 RUN apt-get install -y kubectl
 RUN kubectl version --client
 RUN python -m pip install wget
-RUN python -m pip install awscli
+#RUN python -m pip install awscli
 RUN mkdir /root/.aws
 ADD config /root/.aws
 
