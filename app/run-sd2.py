@@ -8,11 +8,26 @@ from fastapi import FastAPI
 import torch
 
 pod_name=os.environ['POD_NAME']
+deploy_name=os.environ['DEPLOYMENT_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 
+def pub_deployment_counter():
+  cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
+  response = cloudwatch.put_metric_data(
+    Namespace=cw_namespace
+    MetricData=[
+      {
+        'MetricName':deploy_name,
+        'Value':1
+        'Unit':'Count'
+       },
+    ]
+  )
+  print(f"in pub_deployment_counter - response:{response}")
+  return response
 
 # Define datatype
 DTYPE = torch.bfloat16
@@ -146,5 +161,10 @@ def healthy():
 @app.get("/readiness")
 def ready():
   return {"message": pod_name + "is ready"}
+
+@app.get("/pub")
+def pub():
+  response=pub_deployment_counter()
+  return {"message": response + " "}
 
 app = gr.mount_gradio_app(app, io, path="/serve")
