@@ -33,6 +33,7 @@ def pub_deployment_counter():
        },
     ]
   )
+  print(f"in pub_deployment_counter - response:{response}")
             
 # Define datatype
 DTYPE = torch.bfloat16
@@ -131,7 +132,7 @@ def load(n_inf: int):
   num_inference_steps = n_inf
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   pipe(**model_args).images[0]
-  pub_deployment_counter()
+  pub_deployment_counter
   return {"message": "1"}
 
 app = gr.mount_gradio_app(app, io, path="/serve")
