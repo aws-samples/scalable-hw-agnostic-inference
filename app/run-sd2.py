@@ -21,8 +21,8 @@ def pub_deployment_counter():
     MetricData=[
       {
         'MetricName':nodepool,
-        'Value':1
-        'Unit':'Count'
+        'Value':1,
+        'Unit':'Count',
        },
     ]
   )
