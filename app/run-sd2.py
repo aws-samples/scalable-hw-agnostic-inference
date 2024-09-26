@@ -13,6 +13,7 @@ model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
+cw_namespace='hw-agnostic-infer'
 
 def pub_deployment_counter():
   cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
