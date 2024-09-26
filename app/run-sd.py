@@ -1,5 +1,4 @@
 import os
-import boto3
 import math
 import time
 import random
