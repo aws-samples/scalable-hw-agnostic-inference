@@ -1,4 +1,5 @@
 import os
+import boto3
 import math
 import time
 import random
@@ -13,12 +14,26 @@ import base64
 from io import BytesIO
 
 pod_name=os.environ['POD_NAME']
+deploy_name=os.environ['DEPLOYMENT_NAME']
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
+cw_namespace='hw-agnostic-infer'
 
-
+def pub_deployment_counter():
+  cloudwatch = boto3.client('cloudwatch', region_name='us-west-2') 
+  response = cloudwatch.put_metric_data(
+    Namespace=cw_namespace
+    MetricData=[
+      {
+        'MetricName':deploy_name,
+        'Value':1
+        'Unit':'Count'
+       },
+    ]
+  )
+            
 # Define datatype
 DTYPE = torch.bfloat16
 
@@ -116,6 +131,7 @@ def load(n_inf: int):
   num_inference_steps = n_inf
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   pipe(**model_args).images[0]
+  pub_deployment_counter()
   return {"message": "1"}
 
 app = gr.mount_gradio_app(app, io, path="/serve")
