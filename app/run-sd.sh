@@ -8,6 +8,7 @@ if [ "$(uname -i)" = "x86_64" ]; then
     pip install environment_kernels
     pip install diffusers transformers accelerate safetensors matplotlib Pillow ipython torch -U
     pip install click nvitop
+    pip install torch torchvision --upgrade --extra-index-url https://download.pytorch.org/whl/cu121
   fi
   uvicorn run-sd:app --host=0.0.0.0 
 fi
