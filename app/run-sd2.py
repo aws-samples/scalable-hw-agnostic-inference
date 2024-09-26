@@ -154,6 +154,7 @@ def load(n_runs: int,n_inf: int):
   num_inference_steps = n_inf
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
+  pub_deployment_counter()
   return {"message": "benchmark report:"+report}
 
 @app.get("/health")
@@ -163,10 +164,5 @@ def healthy():
 @app.get("/readiness")
 def ready():
   return {"message": pod_name + "is ready"}
-
-@app.get("/pub")
-def pub():
-  response=pub_deployment_counter()
-  return {"message": response + " "}
 
 app = gr.mount_gradio_app(app, io, path="/serve")
