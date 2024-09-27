@@ -43,7 +43,7 @@ kubectl apply -f k8s-neuron-device-plugin.yml
 
 * Deploying a nodepool in Kubernetes is a group of nodes within a cluster that have the same configuration. 
 ```
-kubectl apply -f amd-inf2-nodepool.yaml
+cat amd-inf2-nodepool.yaml | envsubst | kubectl apply -f -
 ```
 
 ## Deploy Stable Diffusion
