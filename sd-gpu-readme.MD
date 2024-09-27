@@ -28,7 +28,7 @@ kubectl apply -f nvidia-device-plugin-daemonset.yaml
 
 * Deploying a nodepool in Kubernetes is a group of nodes within a cluster that have the same configuration. 
 ```
-kubectl apply -f amd-nvidia-nodepool.yaml
+cat amd-nvidia-nodepool.yaml | envsubst | kubectl apply -f -
 ```
 
 ## Deploy Stable Diffusion
