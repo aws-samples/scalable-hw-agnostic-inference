@@ -8,6 +8,7 @@ from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
 
+app_name=os.environ['APP']
 pod_name=os.environ['POD_NAME']
 nodepool=os.environ['NODEPOOL']
 model_id=os.environ['MODEL_ID']
@@ -15,22 +16,21 @@ device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 cw_namespace='hw-agnostic-infer'
+cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
 
-def pub_deployment_counter():
-  cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
+def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
     Namespace=cw_namespace,
     MetricData=[
       {
-        'MetricName':nodepool,
-        'Value':1,
-        'Unit':'Count',
+        'MetricName':metric_name,
+        'Value':metric_value,
+        'Unit':metric_unit,
        },
     ]
   )
   print(f"in pub_deployment_counter - response:{response}")
   return response
-
 # Define datatype
 DTYPE = torch.bfloat16
 
@@ -150,11 +150,19 @@ def read_main():
 
 @app.get("/load/{n_runs}/infer/{n_inf}")
 def load(n_runs: int,n_inf: int):
+  start_time = time.time()
   prompt = "a photo of an astronaut riding a horse on mars"
   num_inference_steps = n_inf
   model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
-  pub_deployment_counter()
+  total_time =  time.time()-start_time
+
+  counter_metric=app+'-counter'
+  cw_pub_metric(counter_metric,1,'Count')
+  
+  latency_metric=app+'-latency'
+  cw_pub_metric(latency_metric,total_time,'Seconds')
+
   return {"message": "benchmark report:"+report}
 
 @app.get("/health")
