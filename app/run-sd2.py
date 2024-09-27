@@ -160,6 +160,9 @@ def load(n_runs: int,n_inf: int):
   counter_metric=app_name+'-counter'
   cw_pub_metric(counter_metric,1,'Count')
   
+  counter_metric=nodepool
+  cw_pub_metric(counter_metric,1,'Count')
+
   latency_metric=app_name+'-latency'
   cw_pub_metric(latency_metric,total_time,'Seconds')
 
