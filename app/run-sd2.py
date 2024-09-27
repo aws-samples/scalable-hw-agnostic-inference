@@ -157,10 +157,10 @@ def load(n_runs: int,n_inf: int):
   report=benchmark(n_runs, "stable_diffusion_512", pipe, model_args)
   total_time =  time.time()-start_time
 
-  counter_metric=app+'-counter'
+  counter_metric=app_name+'-counter'
   cw_pub_metric(counter_metric,1,'Count')
   
-  latency_metric=app+'-latency'
+  latency_metric=app_name+'-latency'
   cw_pub_metric(latency_metric,total_time,'Seconds')
 
   return {"message": "benchmark report:"+report}
