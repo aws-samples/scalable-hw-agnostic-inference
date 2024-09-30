@@ -21,7 +21,7 @@ spec:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
@@ -32,9 +32,7 @@ spec:
         args: ["run-bert"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
-          requests:
-            aws.amazon.com/neuron: 1
+            nvidia.com/cuda: 1
         ports:
           - containerPort: 8000
             protocol: TCP
