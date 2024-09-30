@@ -14,7 +14,7 @@ spec:
         app: bert-gpu
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-nvidia-g5
+        karpenter.sh/nodepool: amd-nvidia
       volumes:
       - name: dshm
         emptyDir:
