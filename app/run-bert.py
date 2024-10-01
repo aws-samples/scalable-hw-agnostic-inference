@@ -33,6 +33,9 @@ def classify_sentiment(prompt):
     inputs = tokenizer(prompt, return_tensors="pt")
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
+    sent = model(**inputs)
+    total_time =  time.time()-start_time
+    return sent, total_time
   elif device=='cpu':
     inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
   
@@ -50,7 +53,7 @@ elif device=='cpu':
   
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-classify_sentiment("Hamilton is widely celebrated as the best musical of recent years, captivating audiences with its brilliant blend of history, hip-hop, and powerful storytelling.")
+# classify_sentiment("Hamilton is widely celebrated as the best musical of recent years, captivating audiences with its brilliant blend of history, hip-hop, and powerful storytelling.")
 classify_sentiment("Hamilton is overrated and fails to live up to the hype as the best musical of past years.")
 
 

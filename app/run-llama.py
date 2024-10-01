@@ -47,7 +47,7 @@ def classify_sentiment(prompt):
   return sentiment,total_time
 
 if device=='xla':
-  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id,use_cache=True)
+  model = NeuronModelForCausalLM.from_pretrained(compiled_model_id)
 elif device=='cuda': 
   model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
   
