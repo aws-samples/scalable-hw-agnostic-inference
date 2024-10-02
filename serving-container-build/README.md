@@ -30,6 +30,5 @@ npm install -g aws-cdk
 * Deploy the pipeline
 
 ```bash
-cd ci-build
 ./deploy-pipeline.sh
 ```
