@@ -51,6 +51,7 @@ def benchmark(n_runs, test_name, model, model_inputs):
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
+        print(model_inputs)
         res = model(**model_inputs)
         latency_collector.hook()
 
