@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mistral-gpu-2
+  name: mistral-gpu-2
+spec:
+  selector:
+    matchLabels:
+      app: mistral-gpu-2
+  template:
+    metadata:
+      labels:
+        app: mistral-gpu-2
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-nvidia-g5
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /app
+            name: workdir
+        command: ["/run-llama.sh"]
+        args: ["run-llama"]
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: NUM_OF_RUNS_INF
+          value: "10"
+        - name: DEVICE
+          value: "cuda"
+        - name: MODEL_ID
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
+        - name: COMPILED_MODEL_ID
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "64"
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
