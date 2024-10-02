@@ -5,8 +5,8 @@
 ```bash
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=us-west-2
-export BASE_IMAGE_AMD_XLA_TAG=1.13.1-neuronx-py310-sdk2.19.1-ubuntu20.04
-export BASE_IMAGE_AMD_CUD_TAG=2.1.0-gpu-py310-cu118-ubuntu20.04-ec2
+export BASE_IMAGE_AMD_XLA_TAG=1.13.1-neuronx-py310-sdk2.20.0-ubuntu20.04
+export BASE_IMAGE_AMD_CUD_TAG=2.3.0-gpu-py311-cu121-ubuntu20.04-ec2
 export BASE_IMAGE_ARM_CPU_TAG=2.3.0-cpu-py311-ubuntu20.04-ec2
 export IMAGE_AMD_XLA_TAG=amd64-neuron
 export IMAGE_AMD_CUD_TAG=amd64-cuda
@@ -30,6 +30,5 @@ npm install -g aws-cdk
 * Deploy the pipeline
 
 ```bash
-cd ci-build
 ./deploy-pipeline.sh
 ```
