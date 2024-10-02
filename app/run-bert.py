@@ -32,7 +32,8 @@ def classify_sentiment(prompt):
   if device=='xla':
     inputs = tokenizer(prompt, return_tensors="pt")
   elif device=='cuda':
-    inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
+    model = model.to('cuda')  # Move the model to GPU
+    inputs = tokenizer(prompt, return_tensors="pt").to('cuda')  # Move inputs to GPU
     sent = model(**inputs)
     total_time =  time.time()-start_time
     return sent, total_time
