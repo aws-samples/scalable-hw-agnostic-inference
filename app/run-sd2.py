@@ -41,6 +41,15 @@ elif device=='cuda' or device=='triton':
 
 from diffusers import EulerAncestralDiscreteScheduler
 
+class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
+  def step(self, noise_pred, t, sample, **kwargs):
+    print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
+    if self.step_index + 1 >= len(self.sigmas):
+      raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
+
+    return super().step(noise_pred, t, sample, **kwargs)
+
+
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
         model_inputs = model_inputs
@@ -100,7 +109,7 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
     pipe.vae.to(memory_format=torch.channels_last)
