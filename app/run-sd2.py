@@ -49,6 +49,11 @@ class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
 
     return super().step(noise_pred, t, sample, **kwargs)
 
+class Item(BaseModel):
+  prompt: str
+  response: Optional[Image.Image]=None
+  latency: float = 0.0
+  model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -179,15 +184,13 @@ def load(n_runs: int,n_inf: int):
   return {"message": "benchmark report:"+report}
 
 @app.post("/genimage")
-def generate_text_post(item: Item):
+def generate_image_post(item: Item):
   item.response,item.latency=text2img(item.prompt)
   img=item.response
   buffered = BytesIO()
   img.save(buffered, format="PNG")
   img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
   return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
-
-
 
 @app.get("/health")
 def healthy():
