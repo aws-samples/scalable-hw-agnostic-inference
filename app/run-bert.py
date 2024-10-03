@@ -19,12 +19,16 @@ login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
   from optimum.neuron import NeuronModelForSequenceClassification
+  model=NeuronModelForSequenceClassification.from_pretrained(compiled_model_id)
 elif device=='cuda':
   from transformers import AutoModelForSequenceClassification
+  model=AutoModelForSequenceClassification.from_pretrained(model_id)
 elif device=='cpu': 
   from transformers import AutoModelForSequenceClassification
+  model=AutoModelForSequenceClassification.from_pretrained(model_id)
 
 from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 
 def classify_sentiment(prompt):
@@ -44,15 +48,6 @@ def classify_sentiment(prompt):
   sentiment = model.config.id2label[logits.argmax().item()]
   total_time =  time.time()-start_time
   return sentiment,total_time
-
-if device=='xla':
-  model=NeuronModelForSequenceClassification.from_pretrained(compiled_model_id)
-elif device=='cuda': 
-  model=AutoModelForSequenceClassification.from_pretrained(model_id)
-elif device=='cpu': 
-  model=AutoModelForSequenceClassification.from_pretrained(model_id)
-  
-tokenizer = AutoTokenizer.from_pretrained(model_id)
 
 # classify_sentiment("Hamilton is widely celebrated as the best musical of recent years, captivating audiences with its brilliant blend of history, hip-hop, and powerful storytelling.")
 classify_sentiment("Hamilton is overrated and fails to live up to the hype as the best musical of past years.")
