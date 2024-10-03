@@ -15,7 +15,7 @@ metadata:
     alb.ingress.kubernetes.io/success-codes: '200-301'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/backend-protocol: HTTP
-    alb.ingress.kubernetes.io/load-balancer-name: bertcpu
+    alb.ingress.kubernetes.io/load-balancer-name: bert-c7g
     alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=60
     alb.ingress.kubernetes.io/actions.forward-multiple-tg: >
       {"type":"forward","forwardConfig":{"targetGroups":[{"serviceName":"bert-cpu","servicePort":80,"weight":100}],"targetGroupStickinessConfig":{"enabled":true,"durationSeconds":200}}}
