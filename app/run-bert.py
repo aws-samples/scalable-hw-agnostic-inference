@@ -22,7 +22,7 @@ if device=='xla':
   model=NeuronModelForSequenceClassification.from_pretrained(compiled_model_id)
 elif device=='cuda':
   from transformers import AutoModelForSequenceClassification
-  model=AutoModelForSequenceClassification.from_pretrained(model_id)
+  model=AutoModelForSequenceClassification.from_pretrained(model_id).to('cuda')
 elif device=='cpu': 
   from transformers import AutoModelForSequenceClassification
   model=AutoModelForSequenceClassification.from_pretrained(model_id)
@@ -36,7 +36,7 @@ def classify_sentiment(prompt):
   if device=='xla':
     inputs = tokenizer(prompt, return_tensors="pt")
   elif device=='cuda':
-    model = model.to('cuda')  # Move the model to GPU
+    # model = model.to('cuda')  # Move the model to GPU
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')  # Move inputs to GPU
     sent = model(**inputs)
     total_time =  time.time()-start_time
