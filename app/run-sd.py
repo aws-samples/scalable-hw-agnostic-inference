@@ -18,7 +18,7 @@ device=os.environ["DEVICE"]
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
 num_inference_steps=int(os.environ['NUM_OF_RUNS_INF'])
 
-
+            
 # Define datatype
 DTYPE = torch.bfloat16
 
