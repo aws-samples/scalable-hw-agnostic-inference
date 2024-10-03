@@ -4,3 +4,4 @@ cdk*
 node_modules*
 .github
 .idea
+hfsecret.yaml

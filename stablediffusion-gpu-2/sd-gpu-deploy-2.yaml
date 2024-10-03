@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sd-gpu-2
+  name: sd-gpu-2
+spec:
+  selector:
+    matchLabels:
+      app: sd-gpu-2
+  template:
+    metadata:
+      labels:
+        app: sd-gpu-2
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-nvidia-g5
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /app
+            name: workdir
+        command: ["/start.sh"]
+        args: ["run-sd"]
+        resources:
+          limits:
+            nvidia.com/gpu: 4
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: NUM_OF_RUNS_INF
+          value: "10"
+        - name: DEVICE
+          value: "triton"
+        - name: MODEL_ID
+          value: "stabilityai/stable-diffusion-2-1"
+        - name: COMPILED_MODEL_ID
+          value: "stable-diffusion-2-1"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
