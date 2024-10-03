@@ -41,16 +41,26 @@ elif device=='cuda' or device=='triton':
 
 from diffusers import EulerAncestralDiscreteScheduler
 
+class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
+  def step(self, noise_pred, t, sample, **kwargs):
+    print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
+    if self.step_index + 1 >= len(self.sigmas):
+      raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
+
+    return super().step(noise_pred, t, sample, **kwargs)
+
+
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
         model_inputs = model_inputs
 
-    warmup_run = model(**model_inputs)
+    #warmup_run = model(**model_inputs)
 
     latency_collector = LatencyCollector()
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
+        print(model_inputs)
         res = model(**model_inputs)
         latency_collector.hook()
 
@@ -99,7 +109,7 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
     pipe.vae.to(memory_format=torch.channels_last)
@@ -167,6 +177,17 @@ def load(n_runs: int,n_inf: int):
   cw_pub_metric(latency_metric,total_time,'Seconds')
 
   return {"message": "benchmark report:"+report}
+
+@app.post("/genimage")
+def generate_text_post(item: Item):
+  item.response,item.latency=text2img(item.prompt)
+  img=item.response
+  buffered = BytesIO()
+  img.save(buffered, format="PNG")
+  img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+
+
 
 @app.get("/health")
 def healthy():
