@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bert-inf
+  name: bert-inf
+spec:
+  selector:
+    matchLabels:
+      app: bert-inf
+  template:
+    metadata:
+      labels:
+        app: bert-inf
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-neuron
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /app
+            name: workdir
+        command: ["/run-bert.sh"]
+        args: ["run-bert"]
+        resources:
+          limits:
+            aws.amazon.com/neuron: 1
+          requests:
+            aws.amazon.com/neuron: 1
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: DEVICE
+          value: "xla"
+        - name: MODEL_ID
+          value: "distilbert-base-uncased-finetuned-sst-2-english"
+        - name: COMPILED_MODEL_ID
+          value: "yahavb/distilbert-base-uncased-finetuned-sst-2-english-neuron"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory

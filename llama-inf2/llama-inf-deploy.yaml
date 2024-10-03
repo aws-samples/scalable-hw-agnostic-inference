@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: llama3-inf2
+  name: llama3-inf2
+spec:
+  selector:
+    matchLabels:
+      app: llama3-inf2
+  template:
+    metadata:
+      labels:
+        app: llama3-inf2
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-neuron
+      #serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+      #    - mountPath: /app
+      #      name: workdir
+        command: ["/run-llama.sh"]
+        args: ["run-llama"]
+        resources:
+          requests:
+            aws.amazon.com/neuron: 2
+          limits:
+            aws.amazon.com/neuron: 2
+        env:
+        - name: DEVICE
+          value: "xla"
+        - name: MODEL_ID
+          value: "meta-llama/Meta-Llama-3-8B"
+        - name: COMPILED_MODEL_ID
+          value: "yahavb/Meta-Llama-3-8B-neuron"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "64"
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readiness
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 480
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+      volumes:
+      #- name: workdir
+      #  emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
