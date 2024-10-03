@@ -44,7 +44,7 @@ spec:
           periodSeconds: 10
         env:
         - name: NUM_OF_RUNS_INF
-          value: "10"
+          value: "20"
         - name: DEVICE
           value: "triton"
         - name: MODEL_ID
