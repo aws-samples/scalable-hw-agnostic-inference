@@ -178,6 +178,17 @@ def load(n_runs: int,n_inf: int):
 
   return {"message": "benchmark report:"+report}
 
+@app.post("/genimage")
+def generate_text_post(item: Item):
+  item.response,item.latency=text2img(item.prompt)
+  img=item.response
+  buffered = BytesIO()
+  img.save(buffered, format="PNG")
+  img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+
+
+
 @app.get("/health")
 def healthy():
   return {"message": pod_name + "is healthy"}
