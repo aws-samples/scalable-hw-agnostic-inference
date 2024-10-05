@@ -49,7 +49,7 @@ from diffusers import EulerAncestralDiscreteScheduler
 class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
   def step(self, noise_pred, t, sample, **kwargs):
     print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
-    if self.step_index + 1 >= len(self.sigmas):
+    if int(self.step_index) + 1 >= len(self.sigmas):
       #raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
       self.step_index = min(self.step_index, len(self.sigmas) - 1)
       print(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Clamp step_index to a Valid Range")
