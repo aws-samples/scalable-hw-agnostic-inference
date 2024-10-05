@@ -51,8 +51,8 @@ class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
     print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
     if self.step_index + 1 >= len(self.sigmas):
       #raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
-      print(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Returning unchanged sample to avoid IndexError: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
-      return sample
+      self.step_index = min(self.step_index, len(self.sigmas) - 1)
+      print(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Clamp step_index to a Valid Range")
     return super().step(noise_pred, t, sample, **kwargs)
 
 class Item(BaseModel):
