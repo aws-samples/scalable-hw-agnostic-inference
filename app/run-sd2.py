@@ -52,10 +52,11 @@ class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
     if int(self.step_index) + 1 >= len(self.sigmas):
       #raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
       if hasattr(self, '_step_index'):
+        print(f"_step_index exists and its value is {self._step_index}")
         self._step_index = min(self.step_index, len(self.sigmas) - 1)
       else:
         raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Current _step_index: {self._step_index}")
-      print(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Clamp step_index to a Valid Range")
+    print(f"step_index was clamped to a Valid Range; step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
     return super().step(noise_pred, t, sample, **kwargs)
 
 class Item(BaseModel):
