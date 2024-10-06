@@ -44,7 +44,7 @@ if device=='xla':
 elif device=='cuda' or device=='triton':
   from diffusers import StableDiffusionPipeline
 
-from diffusers import EulerAncestralDiscreteScheduler
+from diffusers import EulerAncestralDiscreteScheduler,DDIMScheduler
 
 class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
   def step(self, noise_pred, t, sample, **kwargs):
@@ -124,7 +124,8 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  #pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
     pipe.vae.to(memory_format=torch.channels_last)
