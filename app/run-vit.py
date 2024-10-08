@@ -1,3 +1,4 @@
+from transformers import AutoImageProcessor,pipeline
 import os
 import math
 import time
@@ -15,19 +16,18 @@ device=os.environ["DEVICE"]
 hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 
 #TBD remove after issue resolves - https://github.com/huggingface/optimum-neuron/issues/710
-os.environ["XLA_FLAGS"] = ""
-os.environ["TF_XLA_FLAGS"] = ""
+#os.environ["XLA_FLAGS"] = ""
+#os.environ["TF_XLA_FLAGS"] = ""
 
 login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
-  from optimum.neuron import NeuronModelForSequenceClassification
+  from optimum.neuron import NeuronModelForImageClassification
 elif device=='cuda':
   print(f"TBD")
 elif device=='cpu': 
   print(f"TBD")
 
-from transformers import AutoImageProcessor,pipeline
 
 def classify_image(url):
   start_time = time.time()
