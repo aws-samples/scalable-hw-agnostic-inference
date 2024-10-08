@@ -38,7 +38,7 @@ def gentext(prompt):
   outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
   print(f"model.generates outputs:{outputs}")
   time_to_first_token = time.time() - start_time
-  first_token = output.sequences[0, inputs['input_ids'].size(-1):]
+  first_token = outputs.sequences[0, inputs['input_ids'].size(-1):]
   decoded_token = tokenizer.decode(first_token, skip_special_tokens=True)
   print(f"Time to first token: {time_to_first_token:.4f} seconds")
   print(f"Generated first token: {decoded_token}")
