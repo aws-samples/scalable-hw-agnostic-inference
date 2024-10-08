@@ -46,18 +46,6 @@ elif device=='cuda' or device=='triton':
 
 from diffusers import EulerAncestralDiscreteScheduler,DDIMScheduler
 
-class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
-  def step(self, noise_pred, t, sample, **kwargs):
-    print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
-    if int(self.step_index) + 1 >= len(self.sigmas):
-      #raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
-      if hasattr(self, '_step_index'):
-        print(f"_step_index exists and its value is {self._step_index}")
-        self._step_index = min(self.step_index, len(self.sigmas) - 1)
-      else:
-        raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)};Current _step_index: {self._step_index}")
-    print(f"step_index was clamped to a Valid Range; step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
-    return super().step(noise_pred, t, sample, **kwargs)
 
 class Item(BaseModel):
   prompt: str
@@ -124,7 +112,6 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  #pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
   pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
