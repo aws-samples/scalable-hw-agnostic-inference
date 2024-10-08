@@ -1,9 +1,9 @@
 #!/bin/bash -x
 pip install --upgrade pip
 #upgrading pytorch; not sure why its not in the DLC
-python -c "import torch; print(torch.__version__)"
-pip install --upgrade torch torchvision
-python -c "import torch; print(torch.__version__)"
+#python -c "import torch; print(torch.__version__)"
+#pip install --upgrade torch torchvision
+#python -c "import torch; print(torch.__version__)"
 if [ "$(uname -i)" = "x86_64" ]; then
   if [ "$DEVICE" == "xla" ]; then
     # TODO ideally that will be moved to Dockerfile but keeping it here for now. 
