@@ -23,6 +23,8 @@ if device=='xla':
 elif device=='cuda':
   from transformers import AutoModelForCausalLM,BitsAndBytesConfig
   quantization_config = BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.float16)
+elif device == 'cpu':
+  from transformers import AutoModelForCausalLM
 
 from transformers import AutoTokenizer
 
@@ -35,6 +37,8 @@ def gentext(prompt):
     inputs = tokenizer(prompt, return_tensors="pt")
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
+  elif device=='cpu':
+    inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
   outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
@@ -50,7 +54,9 @@ if device=='xla':
   model = NeuronModelForCausalLM.from_pretrained(compiled_model_id)
 elif device=='cuda': 
   model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
-  
+elif device=='cpu':
+  model=AutoModelForCausalLM.from_pretrained(model_id)
+
 gentext("write a poem")
 
 
