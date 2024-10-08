@@ -5,6 +5,11 @@
 * Ensure that you have a HuggingFace account created and have read and accepted the Mistral 7B Instruct v0.3 community license agreement found here: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3. This will ensure that the model can be downloaded and accessed from the HuggingFace gated repository and we will not face issues with it later on in the process.
 
 
+## Nodepool
+```
+cat gp-strong-nodepool.yaml | envsubst | kubectl apply -f -
+```
+
 ## Deploy Mistral
 
 * This file aims to deploy stable diffusion 2.1 onto an EKS pod. We will be using the envsubst command which replaces all variables in this file with environment variables, so make sure that the correct variables are set and align with the what will be replaced in the file.

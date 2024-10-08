@@ -60,6 +60,8 @@ spec:
             secretKeyRef:
               name: hf-secrets
               key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "64"
       volumes:
       - name: workdir
         emptyDir: {}
