@@ -19,7 +19,7 @@ hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 #os.environ["XLA_FLAGS"] = ""
 #os.environ["TF_XLA_FLAGS"] = ""
 
-login(hf_token,add_to_git_credential=True)
+#login(hf_token,add_to_git_credential=True)
 
 if device=='xla':
   from optimum.neuron import NeuronModelForImageClassification
