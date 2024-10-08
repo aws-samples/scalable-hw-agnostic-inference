@@ -31,14 +31,14 @@ elif device=='cpu':
 
 def classify_image(url):
   start_time = time.time()
-  if device=='xla':
-    inputs = tokenizer(prompt, return_tensors="pt")
-  elif device=='cuda':
-    print(f"TBD")
-    response="TBD"
-  elif device=='cpu':
-    print(f"TBD")
-    response="TBD"
+  #if device=='xla':
+  #  inputs = tokenizer(prompt, return_tensors="pt")
+  #elif device=='cuda':
+  #  print(f"TBD")
+  #  response="TBD"
+  #elif device=='cpu':
+  #  print(f"TBD")
+  #  response="TBD"
   
   response = pipe(url) 
   total_time = time.time()-start_time
