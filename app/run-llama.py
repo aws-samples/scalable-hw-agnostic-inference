@@ -36,10 +36,11 @@ def gentext(prompt):
   elif device=='cuda':
     inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
   outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+  print(f"model.generates outputs:{outputs}")
   outputs = outputs[0, inputs.input_ids.size(-1):]
-  first_token_time = outputs['time_to_first_token']
-  time_to_first_token = first_token_time - start_time
-  print(f"Time to first token: {time_to_first_token:.4f} seconds")
+  #first_token_time = outputs['time_to_first_token']
+  #time_to_first_token = first_token_time - start_time
+  #print(f"Time to first token: {time_to_first_token:.4f} seconds")
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
   return str(response), str(total_time)
