@@ -1,5 +1,4 @@
-## Prerequisites
-* Follow the steps from sd-gpu-readme.md
+# DistilBERT base uncased finetuned SST-2 on EKS with CPU
 
 ## Deploy CPU Nodepool
 
