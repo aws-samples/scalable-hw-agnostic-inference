@@ -45,7 +45,7 @@ spec:
         - name: COMPILED_MODEL_ID
           value: "yahavb/optimum-neuron-sd21"
         - name: NUM_OF_RUNS_INF
-          value: "3"
+          value: "20"
         - name: POD_NAME
           valueFrom:
             fieldRef:

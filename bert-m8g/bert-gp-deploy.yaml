@@ -2,37 +2,39 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: sd-gpu-2
-  name: sd-gpu-2
+    app: bert-gp
+  name: bert-gp
 spec:
   selector:
     matchLabels:
-      app: sd-gpu-2
+      app: bert-gp
   template:
     metadata:
       labels:
-        app: sd-gpu-2
+        app: bert-gp
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-nvidia-g5
+        karpenter.sh/nodepool: gp-np
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:aarch64-cpu
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
           - mountPath: /app
             name: workdir
-        command: ["/start.sh"]
-        args: ["run-sd"]
+        command: ["/run-bert.sh"]
+        args: ["run-bert"]
         resources:
           limits:
-            nvidia.com/gpu: 4
+            cpu: 2
+          requests:
+            cpu: 2
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -43,18 +45,21 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
         env:
-        - name: NUM_OF_RUNS_INF
-          value: "10"
         - name: DEVICE
-          value: "triton"
+          value: "cpu"
         - name: MODEL_ID
-          value: "stabilityai/stable-diffusion-2-1"
+          value: "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
         - name: COMPILED_MODEL_ID
-          value: "stable-diffusion-2-1"
+          value: "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
         - name: POD_NAME
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
       volumes:
       - name: workdir
         emptyDir: {}

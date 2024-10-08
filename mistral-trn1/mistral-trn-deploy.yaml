@@ -2,20 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: sd-trn
-  name: sd-trn
+    app: mistral-trn
+  name: mistral-trn
 spec:
   selector:
     matchLabels:
-      app: sd-trn
+      app: mistral-trn
   template:
     metadata:
       labels:
-        app: sd-trn
+        app: mistral-trn
     spec:
       nodeSelector:
         karpenter.sh/nodepool: amd-neuron-trn
-      #serviceAccountName: appsimulator
       schedulerName: my-scheduler
       volumes:
       - name: dshm
@@ -28,28 +27,15 @@ spec:
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
-      #    - mountPath: /app
-      #      name: workdir
-        command: ["/start.sh"]
-        args: ["run"]
+          - mountPath: /app
+            name: workdir
+        command: ["/run-llama.sh"]
+        args: ["run-llama"]
         resources:
-          requests:
-            aws.amazon.com/neuron: 1
           limits:
             aws.amazon.com/neuron: 1
-        env:
-        - name: DEVICE
-          value: "xla"
-        - name: MODEL_ID
-          value: "stabilityai/stable-diffusion-2-1-base"
-        - name: COMPILED_MODEL_ID
-          value: "yahavb/optimum-neuron-sd21"
-        - name: NUM_OF_RUNS_INF
-          value: "20"
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
+          requests:
+            aws.amazon.com/neuron: 1
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -59,9 +45,27 @@ spec:
             port: 8000
           initialDelaySeconds: 60
           periodSeconds: 10
+        env:
+        - name: DEVICE
+          value: "xla"
+        - name: MODEL_ID
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
+        - name: COMPILED_MODEL_ID
+          value: "yahavb/Mistral-7B-Instruct-v0-3-neuron"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "64"
       volumes:
-      #- name: workdir
-      #  emptyDir: {}
+      - name: workdir
+        emptyDir: {}
       - name: dshm
         emptyDir:
           medium: Memory
