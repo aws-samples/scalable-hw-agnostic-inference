@@ -7,7 +7,6 @@ import math
 import time
 import random
 import gradio as gr
-from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
 from huggingface_hub import login
