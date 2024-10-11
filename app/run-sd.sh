@@ -2,6 +2,7 @@
 pip install --upgrade pip
 if [ "$(uname -i)" = "x86_64" ]; then
   if [ "$DEVICE" == "xla" ]; then
+    pip install matplotlib Pillow -U
     pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com
     pip install "optimum[neuronx, diffusers]"
   elif [[ "$DEVICE" == "cuda" || "$DEVICE" == "triton" ]]; then
