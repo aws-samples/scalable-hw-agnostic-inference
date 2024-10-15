@@ -7,6 +7,7 @@ RUN python -m pip install awscli
 RUN python -m pip install gradio
 RUN python -m pip install "uvicorn[standard]"
 RUN python -m pip install fastapi
+RUN pip install matplotlib Pillow 
 
 RUN apt-get update
 RUN mkdir -p /etc/apt/keyrings/
