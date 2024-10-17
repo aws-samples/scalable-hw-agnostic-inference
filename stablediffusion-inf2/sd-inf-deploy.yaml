@@ -30,13 +30,13 @@ spec:
             name: dshm
       #    - mountPath: /app
       #      name: workdir
-        command: ["/start.sh"]
+        command: ["/run-sd.sh"]
         args: ["run"]
         resources:
           requests:
-            aws.amazon.com/neuron: 1
+            aws.amazon.com/neuron: 6
           limits:
-            aws.amazon.com/neuron: 1
+            aws.amazon.com/neuron: 6
         env:
         - name: DEVICE
           value: "xla"

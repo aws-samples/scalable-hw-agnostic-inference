@@ -2,26 +2,26 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mistral-inf
-  name: mistral-inf
+    app: mistral-r8g
+  name: mistral-r8g
 spec:
   selector:
     matchLabels:
-      app: mistral-inf
+      app: mistral-r8g
   template:
     metadata:
       labels:
-        app: mistral-inf
+        app: mistral-r8g
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-neuron
+        karpenter.sh/nodepool: memory-optimized-r8g
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:aarch64-cpu
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
@@ -32,9 +32,9 @@ spec:
         args: ["run-llama"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
+            cpu: 64
           requests:
-            aws.amazon.com/neuron: 1
+            cpu: 64
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -46,11 +46,11 @@ spec:
           periodSeconds: 10
         env:
         - name: DEVICE
-          value: "xla"
+          value: "cpu"
         - name: MODEL_ID
           value: "mistralai/Mistral-7B-Instruct-v0.3"
         - name: COMPILED_MODEL_ID
-          value: "yahavb/Mistral-7B-Instruct-v0-3-neuron"
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
         - name: POD_NAME
           valueFrom:
             fieldRef:

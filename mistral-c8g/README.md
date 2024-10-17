@@ -3,28 +3,32 @@
 ## Prerequisites
 
 * Ensure that you have a HuggingFace account created and have read and accepted the Mistral 7B Instruct v0.3 community license agreement found here: https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3. This will ensure that the model can be downloaded and accessed from the HuggingFace gated repository and we will not face issues with it later on in the process.
-Since we are launching Mistral on G5, and if you followed the stable diffusion readme 2, you would have deployed the g5 nodepool file. So no other nodepools are required to be deployed if you followed the stable diffusion readme first. 
 
+
+## Nodepool
+```
+cat compute-optimized-nodepool.yaml | envsubst | kubectl apply -f -
+```
 
 ## Deploy Mistral
 
-* This file aims to deploy stable diffusion 2.1 onto an EKS pod. We will be using the envsubst command which replaces all variables in this file with environment variables, so make sure that the correct variables are set and align with the what will be replaced in the file.
+* This file aims to deploy the LLM onto an EKS pod. We will be using the envsubst command which replaces all variables in this file with environment variables, so make sure that the correct variables are set and align with the what will be replaced in the file.
 ```
-cat mistral-g5-deploy.yaml | envsubst | kubectl apply -f -
+cat mistral-c8g-deploy.yaml | envsubst | kubectl apply -f -
 ```
 
 ## Deploy Service
 
 * We are deploying a service file focused on exposing an application running in our cluster. We define the service to expose port 80, and the pods to have a targetPort of 8000, meaning that the service will route traffic from port 80 on the service to port 8000 on the pods that match the label app:sd-gpu. 
 ```
-kubectl apply -f mistral-g5-svc.yaml
+kubectl apply -f mistral-c8g-svc.yaml
 ```
 
 ## Deploy Ing
 
 * We will be deploying an ingress file which focuses on exposing HTTP routes from outside the cluster to services within the cluster. 
 ```
-kubectl apply -f mistral-g5-ing.yaml
+kubectl apply -f mistral-c8g-ing.yaml
 ```
 
 ## Using Mistral 

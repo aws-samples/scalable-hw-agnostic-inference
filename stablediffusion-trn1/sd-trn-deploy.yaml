@@ -30,7 +30,7 @@ spec:
             name: dshm
       #    - mountPath: /app
       #      name: workdir
-        command: ["/start.sh"]
+        command: ["/run-sd.sh"]
         args: ["run"]
         resources:
           requests:

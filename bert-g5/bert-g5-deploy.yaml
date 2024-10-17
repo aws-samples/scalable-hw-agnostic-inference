@@ -2,39 +2,37 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mistral-inf
-  name: mistral-inf
+    app: bert-g5
+  name: bert-g5
 spec:
   selector:
     matchLabels:
-      app: mistral-inf
+      app: bert-g5
   template:
     metadata:
       labels:
-        app: mistral-inf
+        app: bert-g5
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-neuron
+        karpenter.sh/nodepool: g5-nodepool
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
           - mountPath: /app
             name: workdir
-        command: ["/run-llama.sh"]
-        args: ["run-llama"]
+        command: ["/run-bert.sh"]
+        args: ["run-bert"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
-          requests:
-            aws.amazon.com/neuron: 1
+            nvidia.com/gpu: 1
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -46,11 +44,11 @@ spec:
           periodSeconds: 10
         env:
         - name: DEVICE
-          value: "xla"
+          value: "cuda"
         - name: MODEL_ID
-          value: "mistralai/Mistral-7B-Instruct-v0.3"
+          value: "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
         - name: COMPILED_MODEL_ID
-          value: "yahavb/Mistral-7B-Instruct-v0-3-neuron"
+          value: "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -60,8 +58,6 @@ spec:
             secretKeyRef:
               name: hf-secrets
               key: HUGGINGFACE_TOKEN
-        - name: MAX_NEW_TOKENS
-          value: "50"
       volumes:
       - name: workdir
         emptyDir: {}

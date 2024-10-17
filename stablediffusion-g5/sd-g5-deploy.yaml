@@ -2,39 +2,37 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mistral-inf
-  name: mistral-inf
+    app: sd-g5
+  name: sd-g5
 spec:
   selector:
     matchLabels:
-      app: mistral-inf
+      app: sd-g5
   template:
     metadata:
       labels:
-        app: mistral-inf
+        app: sd-g5
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-neuron
+        karpenter.sh/nodepool: g5-nodepool
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
           - mountPath: /app
             name: workdir
-        command: ["/run-llama.sh"]
-        args: ["run-llama"]
+        command: ["/start.sh"]
+        args: ["run-sd"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
-          requests:
-            aws.amazon.com/neuron: 1
+            nvidia.com/gpu: 4
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -45,23 +43,18 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
         env:
+        - name: NUM_OF_RUNS_INF
+          value: "20"
         - name: DEVICE
-          value: "xla"
+          value: "triton"
         - name: MODEL_ID
-          value: "mistralai/Mistral-7B-Instruct-v0.3"
+          value: "stabilityai/stable-diffusion-2-1"
         - name: COMPILED_MODEL_ID
-          value: "yahavb/Mistral-7B-Instruct-v0-3-neuron"
+          value: "stable-diffusion-2-1"
         - name: POD_NAME
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: HUGGINGFACE_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: hf-secrets
-              key: HUGGINGFACE_TOKEN
-        - name: MAX_NEW_TOKENS
-          value: "50"
       volumes:
       - name: workdir
         emptyDir: {}

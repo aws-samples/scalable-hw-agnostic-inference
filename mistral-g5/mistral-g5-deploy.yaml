@@ -2,26 +2,26 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: mistral-inf
-  name: mistral-inf
+    app: mistral-g5
+  name: mistral-g5
 spec:
   selector:
     matchLabels:
-      app: mistral-inf
+      app: mistral-g5
   template:
     metadata:
       labels:
-        app: mistral-inf
+        app: mistral-g5
     spec:
       nodeSelector:
-        karpenter.sh/nodepool: amd-neuron
+        karpenter.sh/nodepool: g5-nodepool
       volumes:
       - name: dshm
         emptyDir:
           medium: Memory
       containers:
       - name: app
-        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /dev/shm
@@ -32,9 +32,7 @@ spec:
         args: ["run-llama"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
-          requests:
-            aws.amazon.com/neuron: 1
+            nvidia.com/gpu: 1
         ports:
           - containerPort: 8000
             protocol: TCP
@@ -45,12 +43,14 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
         env:
+        - name: NUM_OF_RUNS_INF
+          value: "10"
         - name: DEVICE
-          value: "xla"
+          value: "cuda"
         - name: MODEL_ID
           value: "mistralai/Mistral-7B-Instruct-v0.3"
         - name: COMPILED_MODEL_ID
-          value: "yahavb/Mistral-7B-Instruct-v0-3-neuron"
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
         - name: POD_NAME
           valueFrom:
             fieldRef:
