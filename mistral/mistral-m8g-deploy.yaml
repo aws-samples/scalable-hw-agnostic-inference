@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mistral-m8g
+  name: mistral-m8g
+spec:
+  selector:
+    matchLabels:
+      app: mistral-m8g
+  template:
+    metadata:
+      labels:
+        app: mistral-m8g
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: m8g-nodepool
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:aarch64-cpu
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /app
+            name: workdir
+        command: ["/run-llama.sh"]
+        args: ["run-llama"]
+        resources:
+          limits:
+            cpu: 64
+          requests:
+            cpu: 64
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: DEVICE
+          value: "cpu"
+        - name: MODEL_ID
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
+        - name: COMPILED_MODEL_ID
+          value: "mistralai/Mistral-7B-Instruct-v0.3"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "50"
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
