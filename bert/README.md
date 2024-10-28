@@ -28,3 +28,27 @@ kubectl apply -f bert-[INSTANCE]-svc.yaml
 ```
 kubectl apply -f bert-[INSTANCE]-ing.yaml
 ```
+
+## Using BERT 
+
+* The link is now available by running kubectl get ing. Copy and paste the address into your browser and you will be prompted by a Gradio interface that is connected to the EKS pod running Bert. Enter your prompt and an image will be returned. Add /serve at the end of the address to view the interface.
+```
+kubectl get ing
+```
+
+## View Utilization in Real Time 
+
+* If you have the terminal next to the browser, you can view the GPU or accelerator utilization in real time.
+```
+kubectl exec -it [POD NAME] -- bash
+nvidia-smi 
+nvitop
+exit
+```
+
+```
+kubectl exec -it [POD NAME] -- bash
+neuron-ls
+neuron-top
+exit
+```
