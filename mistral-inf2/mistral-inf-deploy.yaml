@@ -32,9 +32,9 @@ spec:
         args: ["run-llama"]
         resources:
           limits:
-            aws.amazon.com/neuron: 1
+            aws.amazon.com/neuron: 2
           requests:
-            aws.amazon.com/neuron: 1
+            aws.amazon.com/neuron: 2
         ports:
           - containerPort: 8000
             protocol: TCP
