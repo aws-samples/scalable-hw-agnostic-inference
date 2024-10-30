@@ -12,7 +12,9 @@ if [ "$(uname -i)" = "x86_64" ]; then
   elif [[ "$DEVICE" == "cuda" ]]; then
     pip install nvitop bitsandbytes accelerate protobuf --no-cache-dir transformers sentencepiece
   fi
-elif [ "$DEVICE" == "cpu" ]; then
+elif [ "$(uname -i)" = "aarch64" ]; then
+  if [ "$DEVICE" == "cpu" ]; then
     python3 -m pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 diffusers transformers accelerate
+  fi
 fi
 uvicorn run-vit:app --host=0.0.0.0

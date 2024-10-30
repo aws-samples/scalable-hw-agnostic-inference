@@ -8,14 +8,16 @@ spec:
   selector:
     matchLabels:
       app: vit-inf
+      appalb: vit-serve
   template:
     metadata:
       labels:
         app: vit-inf
+        appalb: vit-serve
     spec:
       nodeSelector:
         karpenter.sh/nodepool: amd-neuron
-      #serviceAccountName: appsimulator
+      # serviceAccountName: appsimulator
       schedulerName: my-scheduler
       volumes:
       - name: dshm
@@ -28,29 +30,26 @@ spec:
         volumeMounts:
           - mountPath: /dev/shm
             name: dshm
-      #    - mountPath: /app
-      #      name: workdir
         command: ["/run-vit.sh"]
-        args: ["run"]
         resources:
           requests:
-            aws.amazon.com/neuron: 2
+            aws.amazon.com/neuron: 1
           limits:
-            aws.amazon.com/neuron: 2
+            aws.amazon.com/neuron: 1
         env:
         - name: DEVICE
           value: "xla"
         - name: COMPILED_MODEL_ID
-          value: "google/vit-base-patch16-224-in21k"
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
+          value: "optimum/vit-base-patch16-224-neuronx"
         - name: HUGGINGFACE_TOKEN
           valueFrom:
             secretKeyRef:
               name: hf-secrets
               key: HUGGINGFACE_TOKEN
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         ports:
           - containerPort: 8000
             protocol: TCP

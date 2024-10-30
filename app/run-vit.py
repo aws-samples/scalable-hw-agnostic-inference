@@ -9,6 +9,8 @@ from fastapi import FastAPI
 import torch
 from huggingface_hub import login
 from pydantic import BaseModel
+from PIL import Image
+import requests
 
 pod_name=os.environ['POD_NAME']
 compiled_model_id=os.environ['COMPILED_MODEL_ID']
@@ -24,34 +26,50 @@ hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 if device=='xla':
   from optimum.neuron import NeuronModelForImageClassification
 elif device=='cuda':
-  print(f"TBD")
+  # print(f"TBD")
+  from transformers import ViTImageProcessor, ViTModel
 elif device=='cpu': 
   print(f"TBD")
 
 
 def classify_image(url):
   start_time = time.time()
-  #if device=='xla':
-  #  inputs = tokenizer(prompt, return_tensors="pt")
-  #elif device=='cuda':
-  #  print(f"TBD")
-  #  response="TBD"
-  #elif device=='cpu':
-  #  print(f"TBD")
-  #  response="TBD"
+  url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
+
+  if device=='xla':
+    preprocessor = AutoImageProcessor.from_pretrained(compiled_model_id)
+    model=NeuronModelForImageClassification.from_pretrained(compiled_model_id)
+    pipe = pipeline("image-classification",model=model,feature_extractor=preprocessor)
+    response = pipe(url)
+  elif device=='cuda': 
+    # print(f"TBD")
+    image = Image.open(requests.get(url, stream=True).raw)
+    processor = ViTImageProcessor.from_pretrained(compiled_model_id)
+    model = ViTModel.from_pretrained(compiled_model_id)
+
+    inputs = processor(images=image, return_tensors="pt")
+    outputs = model(**inputs)
+    logits = outputs.logits
+    predicted_class_idx = logits.argmax(-1).item()
+    response = model.config.id2label[predicted_class_idx]
+
+  elif device=='cpu': 
+    # print(f"TBD")
+    image = Image.open(requests.get(url, stream=True).raw)
+    processor = ViTImageProcessor.from_pretrained(compiled_model_id)
+    model = ViTModel.from_pretrained(compiled_model_id)
+
+    inputs = processor(images=image, return_tensors="pt")
+    outputs = model(**inputs)
+    logits = outputs.logits
+    predicted_class_idx = logits.argmax(-1).item()
+    response = model.config.id2label[predicted_class_idx]
   
-  response = pipe(url) 
+   
   total_time = time.time()-start_time
   return response,total_time
 
-if device=='xla':
-  preprocessor = AutoImageProcessor.from_pretrained(compiled_model_id)
-  model=NeuronModelForImageClassification.from_pretrained(compiled_model_id)
-  pipe = pipeline("image-classification",model=model,feature_extractor=preprocessor)
-elif device=='cuda': 
-  print(f"TBD")
-elif device=='cpu': 
-  print(f"TBD")
+
 
 #warmup
 pipe("http://images.cocodataset.org/val2017/000000039769.jpg")
