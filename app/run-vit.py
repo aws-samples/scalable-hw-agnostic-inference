@@ -34,7 +34,6 @@ elif device=='cpu':
 
 def classify_image(url):
   start_time = time.time()
-  url = 'http://images.cocodataset.org/val2017/000000039769.jpg'
 
   if device=='xla':
     preprocessor = AutoImageProcessor.from_pretrained(compiled_model_id)
@@ -70,9 +69,9 @@ def classify_image(url):
   return response,total_time
 
 
-
+classify_image("http://images.cocodataset.org/val2017/000000039769.jpg")
 #warmup
-pipe("http://images.cocodataset.org/val2017/000000039769.jpg")
+# pipe("http://images.cocodataset.org/val2017/000000039769.jpg")
 
 app = FastAPI()
 io = gr.Interface(fn=classify_image,inputs=["text"],
