@@ -27,7 +27,7 @@ if device=='xla':
   from optimum.neuron import NeuronModelForImageClassification
 elif device=='cuda':
   # print(f"TBD")
-  from transformers import ViTImageProcessor, ViTModel
+  from transformers import ViTImageProcessor, ViTForImageClassification
 elif device=='cpu': 
   print(f"TBD")
 
@@ -36,15 +36,16 @@ def classify_image(url):
   start_time = time.time()
 
   if device=='xla':
+    image = Image.open(requests.get(url, stream=True).raw)
     preprocessor = AutoImageProcessor.from_pretrained(compiled_model_id)
     model=NeuronModelForImageClassification.from_pretrained(compiled_model_id)
     pipe = pipeline("image-classification",model=model,feature_extractor=preprocessor)
-    response = pipe(url)
+    response = pipe(image)
   elif device=='cuda': 
     # print(f"TBD")
     image = Image.open(requests.get(url, stream=True).raw)
     processor = ViTImageProcessor.from_pretrained(compiled_model_id)
-    model = ViTModel.from_pretrained(compiled_model_id)
+    model = ViTForImageClassification.from_pretrained(compiled_model_id)
 
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
@@ -56,7 +57,7 @@ def classify_image(url):
     # print(f"TBD")
     image = Image.open(requests.get(url, stream=True).raw)
     processor = ViTImageProcessor.from_pretrained(compiled_model_id)
-    model = ViTModel.from_pretrained(compiled_model_id)
+    model = ViTForImageClassification.from_pretrained(compiled_model_id)
 
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
@@ -68,8 +69,8 @@ def classify_image(url):
   total_time = time.time()-start_time
   return response,total_time
 
-
-classify_image("http://images.cocodataset.org/val2017/000000039769.jpg")
+image_url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+classify_image(image_url)
 #warmup
 # pipe("http://images.cocodataset.org/val2017/000000039769.jpg")
 
