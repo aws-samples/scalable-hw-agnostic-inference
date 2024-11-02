@@ -7,6 +7,11 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
+from pydantic import BaseModel,ConfigDict
+from typing import Optional
+from PIL import Image
+import base64
+from io import BytesIO
 
 app_name=os.environ['APP']
 pod_name=os.environ['POD_NAME']
@@ -39,16 +44,14 @@ if device=='xla':
 elif device=='cuda' or device=='triton':
   from diffusers import StableDiffusionPipeline
 
-from diffusers import EulerAncestralDiscreteScheduler
+from diffusers import EulerAncestralDiscreteScheduler,DDIMScheduler
 
-class CustomEulerAncestralDiscreteScheduler(EulerAncestralDiscreteScheduler):
-  def step(self, noise_pred, t, sample, **kwargs):
-    print(f"Step Index: {self.step_index}, Length of Sigmas: {len(self.sigmas)}")
-    if self.step_index + 1 >= len(self.sigmas):
-      raise IndexError(f"Index out of bounds: step_index={self.step_index}, sigmas_length={len(self.sigmas)}")
 
-    return super().step(noise_pred, t, sample, **kwargs)
-
+class Item(BaseModel):
+  prompt: str
+  response: Optional[Image.Image]=None
+  latency: float = 0.0
+  model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -109,7 +112,7 @@ if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
   pipe = StableDiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.scheduler = CustomEulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+  pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
     pipe.vae.to(memory_format=torch.channels_last)
@@ -179,15 +182,13 @@ def load(n_runs: int,n_inf: int):
   return {"message": "benchmark report:"+report}
 
 @app.post("/genimage")
-def generate_text_post(item: Item):
+def generate_image_post(item: Item):
   item.response,item.latency=text2img(item.prompt)
   img=item.response
   buffered = BytesIO()
   img.save(buffered, format="PNG")
   img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
   return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
-
-
 
 @app.get("/health")
 def healthy():
