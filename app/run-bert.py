@@ -8,6 +8,7 @@ from fastapi import FastAPI
 import torch
 from huggingface_hub import login
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 pod_name=os.environ['POD_NAME']
 model_id=os.environ['MODEL_ID']
@@ -55,6 +56,17 @@ classify_sentiment("Hamilton is overrated and fails to live up to the hype as th
 
 
 app = FastAPI()
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # or ["*"] to allow all
+    allow_credentials=True,
+    allow_methods=["*"],  # allow all HTTP methods
+    allow_headers=["*"],  # allow all headers
+)
+
 io = gr.Interface(fn=classify_sentiment,inputs=["text"],
     outputs = ["text","text"],
     title = model_id + ' in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
