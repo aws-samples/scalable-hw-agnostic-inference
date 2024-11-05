@@ -181,18 +181,30 @@ def load(n_runs: int,n_inf: int):
 
   return {"message": "benchmark report:"+report}
 
-@app.post("/genimage")
-def generate_image_post(item: Item):
-  item.response,item.latency=text2img(item.prompt)
-  #img=item.response
+def serialize_image(image: Image.Image) -> str:
   buffered = BytesIO()
-  #img.save(buffered, format="PNG")
+  image.save(buffered, format="PNG")
   img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-  return {
-    "prompt":item.prompt,
-    "response":img_str,
-    "latency":item.latency
+  return img_str
+
+
+@app.post("/genimage")
+#def generate_image_post(item: Item):
+def generate_image_post(request: dict):
+  #item.response,item.latency=text2img(item.prompt)
+  #img=item.response
+  #buffered = BytesIO()
+  #img.save(buffered, format="PNG")
+  #img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+  #return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+  prompt = request.get("prompt")
+  response_image, latency = text2img(prompt)
+  response_data = {
+        "prompt": prompt,
+        "response": serialize_image(response_image),
+        "latency": latency
   }
+  return response_data
 
 @app.get("/health")
 def healthy():
