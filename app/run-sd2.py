@@ -184,11 +184,15 @@ def load(n_runs: int,n_inf: int):
 @app.post("/genimage")
 def generate_image_post(item: Item):
   item.response,item.latency=text2img(item.prompt)
-  img=item.response
+  #img=item.response
   buffered = BytesIO()
-  img.save(buffered, format="PNG")
+  #img.save(buffered, format="PNG")
   img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+  return {
+    "prompt":item.prompt,
+    "response":img_str,
+    "latency":item.latency
+  }
 
 @app.get("/health")
 def healthy():
