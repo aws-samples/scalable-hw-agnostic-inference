@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vit-c8g
+spec:
+  selector:
+    app: vit-c8g
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: NodePort

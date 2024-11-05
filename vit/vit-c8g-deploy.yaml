@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vit-c8g
+  name: vit-c8g
+spec:
+  selector:
+    matchLabels:
+      app: vit-c8g
+      appalb: vit-serve
+  template:
+    metadata:
+      labels:
+        app: vit-c8g
+        appalb: vit-serve
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: compute-optimized-c8g
+      # serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:aarch64-cpu
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        command: ["/run-vit.sh"]
+        resources:
+          limits:
+            cpu: 64
+          requests:
+            cpu: 64
+        env:
+        - name: DEVICE
+          value: "cpu"
+        - name: COMPILED_MODEL_ID
+          value: "google/vit-base-patch16-224"
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      #- name: workdir
+      #  emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
