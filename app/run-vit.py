@@ -29,7 +29,7 @@ elif device=='cuda':
   # print(f"TBD")
   from transformers import ViTImageProcessor, ViTForImageClassification
 elif device=='cpu': 
-  print(f"TBD")
+  from transformers import ViTImageProcessor, ViTForImageClassification
 
 
 def classify_image(url):
