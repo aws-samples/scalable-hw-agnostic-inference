@@ -40,7 +40,8 @@ def classify_image(url):
     preprocessor = AutoImageProcessor.from_pretrained(compiled_model_id)
     model=NeuronModelForImageClassification.from_pretrained(compiled_model_id)
     pipe = pipeline("image-classification",model=model,feature_extractor=preprocessor)
-    response = pipe(image)
+    response = pipe(image)[0]['label']
+    # response = model.config.id2label
   elif device=='cuda': 
     # print(f"TBD")
     image = Image.open(requests.get(url, stream=True).raw)
