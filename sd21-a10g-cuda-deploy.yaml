@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sd21-a10g-cuda
+spec:
+  selector:
+    app: sd21-a10g-cuda
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sd21-a10g-cuda
+  labels:
+    app: sd21-a10g-cuda
+spec:
+  selector:
+    matchLabels:
+      app: sd21-a10g-cuda
+      albapp: sd21
+  template:
+    metadata:
+      labels:
+        app: sd21-a10g-cuda
+        albapp: sd21
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-nvidia-a10g
+      serviceAccountName: appsimulator
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-cuda
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /app
+            name: workdir
+        command: ["/run-sd.sh"]
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: APP
+          value: "sd21-a10g-cuda" 
+        - name: NODEPOOL
+          value: "amd-nvidia-a10g"
+        - name: NUM_OF_RUNS_INF
+          value: "10"
+        - name: DEVICE
+          value: "cuda"
+        - name: MODEL_ID
+          value: "stabilityai/stable-diffusion-2-1"
+        - name: COMPILED_MODEL_ID
+          value: "stable-diffusion-2-1"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
