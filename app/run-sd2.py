@@ -7,7 +7,6 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
-from pydantic import BaseModel,ConfigDict
 from typing import Optional
 from PIL import Image
 import base64
@@ -44,14 +43,8 @@ if device=='xla':
 elif device=='cuda' or device=='triton':
   from diffusers import StableDiffusionPipeline
 
-from diffusers import EulerAncestralDiscreteScheduler,DDIMScheduler
+from diffusers import DDIMScheduler
 
-
-class Item(BaseModel):
-  prompt: str
-  response: Optional[Image.Image]=None
-  latency: float = 0.0
-  model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -155,11 +148,11 @@ image = pipe(**model_args).images[0]
 app = FastAPI()
 io = gr.Interface(fn=text2img,inputs=["text"],
     outputs = [gr.Image(height=512, width=512), "text"],
-    title = 'Stable Diffusion 2.1 in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
+    title = model_id + ' in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
 
 @app.get("/")
 def read_main():
-  return {"message": "This is Stable Diffusion 2.1 pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf} e"}
+  return {"message": "This is" + model_id + " pod " + pod_name + " in AWS EC2 " + device + " instance; try /load/{n_runs}/infer/{n_inf}; /genimage http post with user prompt "}
 
 @app.get("/load/{n_runs}/infer/{n_inf}")
 def load(n_runs: int,n_inf: int):
@@ -181,14 +174,23 @@ def load(n_runs: int,n_inf: int):
 
   return {"message": "benchmark report:"+report}
 
-@app.post("/genimage")
-def generate_image_post(item: Item):
-  item.response,item.latency=text2img(item.prompt)
-  img=item.response
+def serialize_image(image: Image.Image) -> str:
   buffered = BytesIO()
-  img.save(buffered, format="PNG")
+  image.save(buffered, format="PNG")
   img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-  return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
+  return img_str
+
+
+@app.post("/genimage")
+def generate_image_post(request: dict):
+  prompt = request.get("prompt")
+  response_image, latency = text2img(prompt)
+  response_data = {
+        "prompt": prompt,
+        "response": serialize_image(response_image),
+        "latency": latency
+  }
+  return response_data
 
 @app.get("/health")
 def healthy():
