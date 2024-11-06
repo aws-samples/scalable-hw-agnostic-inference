@@ -121,7 +121,7 @@ We configure KEDA to trigger the Horizontal Pod Autoscaler (HPA) to scale the nu
 We load test the application for each compute accelerator and framework combination, such as Inf2, Trn1, or GPU with CUDA, NeuronX, or Triton. The results define the targetMetricValue that KEDA uses to scale the required number of k8s pods for each deployment combination. The breaking point occurs when throughput plateaus and latency exceeds 900 milliseconds. Below are the load tests conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores. We skipped the default CUDA compiler with L4 NVIDIA, as it did not meet the minimum latency requirements.
 
 ![Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)](./figure4-breakpoint-latency.png)
-![Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)](./figure4-breakpoint-util.png)
+![Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)](./figure5-breakpoint-util.png)
 
 With the application's breaking points identified, we’ll configure four ScaledObject KEDA settings. Each configuration will specify which Deployment to control (e.g., `stable-diffusion-inf2`) and the AWS CloudWatch metric to use for pod throughput (defined in `metadata.expression`). We’ll apply targetMetricValue settings that correspond to the observed breaking points in Figures 4 and 5, and maintain a minimum capacity of 1 pod, indicated by `minReplicaCount`.
 
