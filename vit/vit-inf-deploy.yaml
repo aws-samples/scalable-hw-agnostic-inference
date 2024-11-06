@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vit-inf
+  name: vit-inf
+spec:
+  selector:
+    matchLabels:
+      app: vit-inf
+      appalb: vit-serve
+  template:
+    metadata:
+      labels:
+        app: vit-inf
+        appalb: vit-serve
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-neuron
+      # serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        command: ["/run-vit.sh"]
+        resources:
+          requests:
+            aws.amazon.com/neuron: 1
+          limits:
+            aws.amazon.com/neuron: 1
+        env:
+        - name: DEVICE
+          value: "xla"
+        - name: COMPILED_MODEL_ID
+          value: "optimum/vit-base-patch16-224-neuronx"
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      #- name: workdir
+      #  emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
