@@ -17,6 +17,7 @@ The solution involves deploying various Kubernetes constructs, including deploym
 
 ![Figure 1-Solution overview](./figure1-soultion-overview.png)
 *Figure 1-Solution overview*
+
 The hardware accelerators advertise their capabilities as Kubernetes resources, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron). This enables Karpenter to right-size the EC2 instance it will launch. To facilitate this, we deploy [nvidia-device-plugin](https://github.com/NVIDIA/k8s-device-plugin?tab=readme-ov-file#deployment-via-helm) and [neuron-device-plugin](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/containers/tutorials/k8s-setup.html) as daemon sets. These plugins allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. By providing visibility into available device resources, they enable Kubernetes to schedule GPU and Inferentia workloads efficiently. Additionally, these plugins allow the accelerator resources to be allocated to pods that require acceleration.
 
 The NVIDA Karpenter nodepool, includes [g5](./amd-nvidia-a10g-nodepool.yaml) and [g6](./amd-nvidia-l4-nodepool.yaml) EC2 instances powered by NVIDIA A10G and L4 core respectvily:
@@ -125,6 +126,7 @@ We load test the application for each compute accelerator and framework combinat
 
 ![Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)](./figure4-breakpoint-latency.png)
 *Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)*
+
 ![Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)](./figure5-breakpoint-util.png)
 *Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)*
 
@@ -205,7 +207,9 @@ Figure 6 illustrates the optimal compute allocation based on inference cost. The
 
 ![Figure 6 - Cost optimized deployment with weighted load balancing](./figure6-cost-optimized-deploy.png)
 *Figure 6 - Cost optimized deployment with weighted load balancing*
+
 ![Figure 7 - Cost optimized deployment HTTP throughput and compute usage](./figure7-cost-optimized-throughput.png)
 *Figure 7 - Cost optimized deployment HTTP throughput and compute usage*
+
 
 ### Option 2 - Compute capacity optimized configuration
