@@ -16,6 +16,7 @@ To streamline our builds for each accelerator, we rely on [AWS Deep Learning Con
 The solution involves deploying various Kubernetes constructs, including deployments (for the model app), services, and an [ALB ingress](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) (acting as a load balancer). [Karpenter node pools](https://karpenter.sh/preview/concepts/nodepools/) power the deployment pods and launch nodes with the appropriate compute resources. Each deployment targets a specific accelerator, as the OCI image is built on accelerator-specific Deep Learning Containers (DLC).
 
 ![Figure 1-Solution overview](./figure1-soultion-overview.png)
+*Figure 1-Solution overview*
 The hardware accelerators advertise their capabilities as Kubernetes resources, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron). This enables Karpenter to right-size the EC2 instance it will launch. To facilitate this, we deploy [nvidia-device-plugin](https://github.com/NVIDIA/k8s-device-plugin?tab=readme-ov-file#deployment-via-helm) and [neuron-device-plugin](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/containers/tutorials/k8s-setup.html) as daemon sets. These plugins allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. By providing visibility into available device resources, they enable Kubernetes to schedule GPU and Inferentia workloads efficiently. Additionally, these plugins allow the accelerator resources to be allocated to pods that require acceleration.
 
 The NVIDA Karpenter nodepool, includes [g5](./amd-nvidia-a10g-nodepool.yaml) and [g6](./amd-nvidia-l4-nodepool.yaml) EC2 instances powered by NVIDIA A10G and L4 core respectvily:
@@ -113,7 +114,9 @@ metadata:
 
 Following the deployment, we proceed to test the quality of the generated images by sampling the web app. Below are two examples:
 ![GPU-based inference example for qualitative tests](./figure2-gpu-gradio-sample.png)
+*GPU-based inference example for qualitative tests*
 ![Neuron-based inference example for qualitative tests](./figure3-inf-gradio-sample.png)
+*Neuron-based inference example for qualitative tests*
 
 With the model inference endpoint now enabled on both GPU and Inferentia instances, we need to scale compute capacity to meet user demand and fine-tune performance. To achieve this, we use Amazon CloudWatch Container Insights with Enhanced Observability for EKS, which automatically discovers key health metrics from AWS accelerators like Inferentia and NVIDIA GPUs. Through Container Insights dashboards, we can visualize these pre-configured metrics, enabling effective monitoring of accelerated infrastructure and optimized workload usage.
 
@@ -121,7 +124,9 @@ We configure KEDA to trigger the Horizontal Pod Autoscaler (HPA) to scale the nu
 We load test the application for each compute accelerator and framework combination, such as Inf2, Trn1, or GPU with CUDA, NeuronX, or Triton. The results define the targetMetricValue that KEDA uses to scale the required number of k8s pods for each deployment combination. The breaking point occurs when throughput plateaus and latency exceeds 900 milliseconds. Below are the load tests conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores. We skipped the default CUDA compiler with L4 NVIDIA, as it did not meet the minimum latency requirements.
 
 ![Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)](./figure4-breakpoint-latency.png)
+*Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)*
 ![Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)](./figure5-breakpoint-util.png)
+*Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)*
 
 With the application's breaking points identified, we’ll configure four ScaledObject KEDA settings. Each configuration will specify which Deployment to control (e.g., `stable-diffusion-inf2`) and the AWS CloudWatch metric to use for pod throughput (defined in `metadata.expression`). We’ll apply targetMetricValue settings that correspond to the observed breaking points in Figures 4 and 5, and maintain a minimum capacity of 1 pod, indicated by `minReplicaCount`.
 
@@ -159,7 +164,7 @@ Next, we calculate cost of inference per second for each deployment unit based o
 | (sd21, g6, triton)    | g6.xlarge / $0.8048        | 61         | 0.01320                    |
 | (sd21, g5, cuda)      | g5.xlarge / $1.0060        | 60         | 0.01677                    |
 
-Table 1 - Deployment unit cost of inference
+*Table 1 - Deployment unit cost of inference*
 
 The cost of inference per second determines the weights assigned to each deployment unit. We configure a Kubernetes service for each deployment to control traffic routing and assign these services to ALB target groups as follows:
 
@@ -199,6 +204,8 @@ The cost of inference per second determines the weights assigned to each deploym
 Figure 6 illustrates the optimal compute allocation based on inference cost. The `sd21-inf2` deployment handled 40% of total requests with minimal latency, while the remaining deployments were allocated per the ALB ingress configuration. Figure 6 displays effective throughput, indicated by HTTP code 200 (successful requests) and HTTP code 500 (failures), while maintaining optimal utilization levels—70% for Neuron cores and 90% for GPU cores.
 
 ![Figure 6 - Cost optimized deployment with weighted load balancing](./figure6-cost-optimized-deploy.png)
+*Figure 6 - Cost optimized deployment with weighted load balancing*
 ![Figure 7 - Cost optimized deployment HTTP throughput and compute usage](./figure7-cost-optimized-throughput.png)
+*Figure 7 - Cost optimized deployment HTTP throughput and compute usage*
 
 ### Option 2 - Compute capacity optimized configuration
