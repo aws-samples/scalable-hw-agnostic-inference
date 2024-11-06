@@ -7,7 +7,6 @@ import gradio as gr
 from matplotlib import image as mpimg
 from fastapi import FastAPI
 import torch
-from pydantic import BaseModel,ConfigDict
 from typing import Optional
 from PIL import Image
 import base64
@@ -44,14 +43,8 @@ if device=='xla':
 elif device=='cuda' or device=='triton':
   from diffusers import StableDiffusionPipeline
 
-from diffusers import EulerAncestralDiscreteScheduler,DDIMScheduler
+from diffusers import DDIMScheduler
 
-
-class Item(BaseModel):
-  prompt: str
-  response: Optional[Image.Image]=None
-  latency: float = 0.0
-  model_config = ConfigDict(arbitrary_types_allowed=True)
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -189,14 +182,7 @@ def serialize_image(image: Image.Image) -> str:
 
 
 @app.post("/genimage")
-#def generate_image_post(item: Item):
 def generate_image_post(request: dict):
-  #item.response,item.latency=text2img(item.prompt)
-  #img=item.response
-  #buffered = BytesIO()
-  #img.save(buffered, format="PNG")
-  #img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-  #return {"prompt":item.prompt,"response":img_str,"latency":item.latency}
   prompt = request.get("prompt")
   response_image, latency = text2img(prompt)
   response_data = {
