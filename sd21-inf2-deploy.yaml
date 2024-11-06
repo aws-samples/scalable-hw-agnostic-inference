@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sd21-inf2
+spec:
+  selector:
+    app: sd21-inf2
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: sd21-inf2
+  name: sd21-inf2
+spec:
+  selector:
+    matchLabels:
+      app: sd21-inf2
+      albapp: sd21
+  template:
+    metadata:
+      labels:
+        app: sd21-inf2
+        albapp: sd21
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-neuron-inf2
+      serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        command: ["/run-sd.sh"]
+        resources:
+          requests:
+            aws.amazon.com/neuron: 1
+          limits:
+            aws.amazon.com/neuron: 1
+        env:
+        - name: APP
+          value: "sd21-inf2"
+        - name: NODEPOOL
+          value: "amd-neuron-inf2" 
+        - name: DEVICE
+          value: "xla"
+        - name: MODEL_ID
+          value: "stabilityai/stable-diffusion-2-1-base"
+        - name: COMPILED_MODEL_ID
+          value: "yahavb/optimum-neuron-sd21"
+        - name: NUM_OF_RUNS_INF
+          value: "10"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory

@@ -1,0 +1,44 @@
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: amd-neuron-trn1
+spec:
+  template:
+    spec:
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64"]
+        - key: karpenter.k8s.aws/instance-family
+          operator: In
+          values: ["trn1"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["on-demand"]
+      nodeClassRef:
+        name: amd-neuron
+  limits:
+    cpu: 1000
+  disruption:
+    consolidationPolicy: WhenUnderutilized
+    expireAfter: 720h # 30 * 24h = 720h
+---
+apiVersion: karpenter.k8s.aws/v1beta1
+kind: EC2NodeClass
+metadata:
+  name: amd-neuron
+spec:
+  amiFamily: AL2 # Amazon Linux 2
+  role: "KarpenterNodeRole-kub316"
+  subnetSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "kub316"
+  securityGroupSelectorTerms:
+    - tags:
+        karpenter.sh/discovery: "kub316" 
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 300Gi
+        volumeType: gp3
+        encrypted: true

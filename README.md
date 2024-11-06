@@ -1,30 +1,25 @@
 # scalable-hw-agnostic-inference
 
-The growing interest in gen-AI applications is driving demand for compute accelerators, resulting in increased inference costs and a shortage of compute capacity. This has led to the introduction of more compute accelerator options, such as NVIDIA and Inferentia. However, each option introduces novel methods for running AI applications on the compute accelerator and requires different code implementations, such as Neuron and CUDA SDKs. Here, we present methods to reduce AI accelerator and CPU costs and minimize compute capacity constraints. 
+Growing interest in gen-AI applications is driving demand for compute accelerators, increasing inference costs and causing compute capacity shortages. This has led to more accelerator options, like NVIDIA GPUs and [AWS Inferentia](https://aws.amazon.com/machine-learning/inferentia/), both supporting common deep learning libraries such as PyTorch transformers and diffusers. AWS Inferentia, a custom AI chip for high-performance inference predictions, is particularly useful for optimizing cost and performance in production workloads. Adapting to Inferentia requires modifying deployments to use the Neuron SDK, including adjustments to model compilation and inference pipelines. Each compute accelerator necessitates changes in build and deployment methods, involving hardware-specific drivers and frameworks like [Neuron](https://awsdocs-neuron.readthedocs-hosted.com/), [Triton](https://openai.com/index/triton/), and CUDA.
 
-We explore the benefits of NVIDIA-based accelerators A10G (G5), L4(G6), A100(P4), and AWS Inferentia (inf2) instances suitable for inference of a fun model that produces unique photorealistic images from text and image prompts, Stable Diffusion.
+This post outlines how to integrate AWS Inferentia instances into an existing Amazon EKS environment using GPU-based EC2 instances. Customers can mix compute accelerator architectures to enable their generative AI applications to leverage various Amazon EC2 accelerated compute types, optimizing for cost and resilience against capacity constraints. The blog presents two configurations: (1) One optimized for capacity, ensuring failover to available instances while maintaining latency; and (2) focused on cost, using weighted load balancing based on benchmarked inference costs to prioritize cost-effective deployment. This post emphasizes inference workloads, where a trained machine learning model processes new data to generate a response. We chose inference over training because it is dynamic, consumption-based, and flexible enough to run on different accelerators.
 
-This example uses PyTorch and demonstrates the steps required to compile the model and store it on HuggingFace. We then build, deploy, and run the model on all accelerators using AWS Deep Learning Containers.
+The solution uses [KEDA](https://keda.sh/), a Kubernetes-based autoscaler, to control the number of accelerated compute nodes based on optimal model throughput, which is measured by the Application Load Balancer (ALB). The blog also demonstrates the use of [Karpenter](https://karpenter.sh/) to simplify the provisioning of mixed compute resources in Kubernetes clusters.
 
-Additionally, we show how to scale K8s deployment size based on critical metrics published to CloudWatch, such as inference latency and throughput, with KEDA. Finally, we demonstrate how Karpenter schedules the optimal accelerator instance that meets price and performance requirements.
+In our exploration, we examine the benefits of various accelerators for inferencing the [Stable Diffusion](https://stability.ai/stable-image) model, a generative AI model capable of producing unique, photorealistic images from text and image prompts. We focus on NVIDIA-based accelerators such as the A10G (EC2 G5 instances) and L4 (EC2 G6 instances), as well as AWS-specific options like Inferentia (EC2 inf2 instances) and Trainium (EC2 trn1 instances).
 
-### Build-time
-To construct an accelerator-agnostic inference service, the application processing unit must be packaged to support various accelerators and invoked dynamically based on the accelerator it operates on. Our build process incorporates accelerator-specific software packages such as optimum.neuron and diffusers tailored for NVIDIA and AWS Inferentia.
+For our implementation, we utilize [HuggingFace](https://huggingface.co/) as the open-source platform, leveraging its tools and libraries for building, training, and deploying state-of-the-art models. To effectively use these accelerators, we employ Triton for NVIDIA's GPUs and PyTorch NeuronX for AWS Inferentia and Trainium. These tools are crucial as they construct the computational graph in advance, optimizing the inference process by compiling and arranging operations for enhanced performance.
 
-The initial build process entails configuring the K8s node using the EKS Kubernetes Worker AMI for Machine Learning Accelerated Workloads on Amazon Linux 2 image. This image contains essential components like Kubelet, IAM authenticator, containerd, NVIDIA, and Neuron drivers, along with kernel-relevant headers.
+To streamline our builds for each accelerator, we rely on [AWS Deep Learning Containers (DLC)](https://github.com/aws/deep-learning-containers) images. These images, integrated with the EKS Deep Learning AMI and maintained by AWS, significantly simplify the build process across different accelerator types.
 
-Subsequently, we utilize AWS Deep Learning Containers (DLC) to conceal the AI chip specialized SDK atop the K8s node. These preconfigured Docker images are thoroughly tested with the latest NVIDIA and Neuron deep learning frameworks. During the build process, the relevant DLC is pulled for each variant and augmented with the inference application-specific code, such as computer vision models (Step 2). These customized images are then pushed to a single ECR repository and adorned with the supported accelerator and AI frameworks (Step 3).
+## Solution overview
+The solution involves deploying various Kubernetes constructs, including deployments (for the model app), services, and an [ALB ingress](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) (acting as a load balancer). [Karpenter node pools](https://karpenter.sh/preview/concepts/nodepools/) power the deployment pods and launch nodes with the appropriate compute resources. Each deployment targets a specific accelerator, as the OCI image is built on accelerator-specific Deep Learning Containers (DLC).
 
-Following this, the process assembles the model on the designated AI chip by deploying a K8S job. This action triggers Karpenter to launch the appropriate EC2 instance, such as G5, G6, P4, or Inf2, using the EKS Kubernetes Worker AMI for Machine Learning (Step 4). The job subsequently invokes the specific DLC, compiles the model graphs, and uploads them to HuggingFace (Step 5).
+![Figure 1-Solution overview](./figure1-soultion-overview.png)
+The hardware accelerators advertise their capabilities as Kubernetes resources, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron). This enables Karpenter to right-size the EC2 instance it will launch. To facilitate this, we deploy [nvidia-device-plugin](https://github.com/NVIDIA/k8s-device-plugin?tab=readme-ov-file#deployment-via-helm) and [neuron-device-plugin](https://awsdocs-neuron.readthedocs-hosted.com/en/latest/containers/tutorials/k8s-setup.html) as daemon sets. These plugins allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. By providing visibility into available device resources, they enable Kubernetes to schedule GPU and Inferentia workloads efficiently. Additionally, these plugins allow the accelerator resources to be allocated to pods that require acceleration.
 
-![alt text](/aws-gpu-neuron-eks-sample-model-build.png)
-### Deploy-time
+The NVIDA Karpenter nodepool, includes [g5](./amd-nvidia-a10g-nodepool.yaml) and [g6](./amd-nvidia-l4-nodepool.yaml) EC2 instances powered by NVIDIA A10G and L4 core respectvily:
 
-The deployment phase (scheduling time) involves deploying Kubernetes constructs such as pods, services, ingress, and node pools (Step 1). We configure a Kubernetes deployment per compute accelerator because the OCI image is built on accelerator-specific DLC. Thus, we configure a Karpenter node pool per compute accelerator to launch Kubernetes nodes with the compute-specific accelerator.
-
-The HW accelerator requires advertising its capabilities, such as accelerator cores (e.g., nvidia.com/gpu or aws.amazon.com/neuron), to enable Karpenter to right-size the EC2 instance it will launch (Step 2). Therefore, we deploy daemon sets, namely nvidia-device-plugin and neuron-device-plugin, to allow Kubernetes to discover and utilize NVIDIA GPU and Inferentia Neuron resources available on a node. These plugins enable Kubernetes to schedule GPU and Inferentia workloads efficiently by providing visibility into available device resources. They also allow them to be allocated to pods that require acceleration.
-
-The NVIDA Karpenter nodepool we allow `g5` and `g6` instances that powers the NVIDIA A10G and L4 core. Once the pod is scheduled on a node, the PyTorch code is invoked, initiating the HuggingFace pipeline customized for the accelerator it runs on. For instance, NeuronStableDiffusionPipeline for Inferentia and StableDiffusionPipeline for GPU. Subsequently, it retrieves the appropriate pre-trained compiled model from HuggingFace and initiates the inference endpoint (Step 3). When deploying a stable diffusion pipeline from Hugging Face, typically only specific files required to load the model are pulled. These files usually include the model weights, configuration file, and any necessary tokenizer files for inference. This approach streamlines the deployment process by only fetching essential components, rather than the entire model, optimizing resource usage and minimizing overhead.
 ```yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -41,7 +36,8 @@ spec:
           operator: In
           values: ["a10g","l4"]
 ```
-Similarly, in the AWS Inferntia Karpenter nodepool we allow the `inf1` and `inf2` instances.
+Similarly, the AWS Inferntia Karpenter nodepool includes [inf2](./amd-neuron-inf2-nodepool.yaml) instances:
+
 ```yaml
 apiVersion: karpenter.sh/v1beta1
 kind: NodePool
@@ -56,38 +52,35 @@ spec:
           values: ["amd64"]
         - key: karpenter.k8s.aws/instance-family
           operator: In
-          values: ["inf1","inf2"]
+          values: ["inf2"]
 ```
+Once a pod is scheduled on a node, the [PyTorch code](./app/run-sd.py) is invoked, initiating the HuggingFace pipeline customized for the specific accelerator it's running on. The Hugging Face pipeline simplifies the use of machine learning models by bundling all necessary steps into a convenient interface. These steps include preprocessing inputs, running inference with the model, and post-processing outputs, thus streamlining the workflow for the user.
+For example, NeuronStableDiffusionPipeline is used for Inferentia, while StableDiffusionPipeline is employed for GPUs. After the appropriate pipeline is selected, it retrieves the pre-trained compiled model from Hugging Face and initiates the inference endpoint.
 
-We use an Application Load Balancer (ALB)-based Ingress to control traffic flowing to GPU-based and Inferentia-based node pools. We created an Application Load Balancer using the AWS Load Balancer Controller to distribute incoming requests among the different pods. It controls the traffic routing in the ingress by adding an ingress.kubernetes.io/actions.weighted-routing annotation. You can adjust the weight in the example below to meet your needs. Note, `inf-svc` and `gpu-svc` denotes the k8s services that masks the Inferentia and GPU k8s pods (Step 4).  
-```json
-    alb.ingress.kubernetes.io/actions.forward-multiple-tg: >
-      {
-       "type":"forward","forwardConfig":
-       {
-         "targetGroups":[
-           {
-             "serviceName":"inf-svc",
-             "servicePort":80,
-             "weight":50
-           },
-           {
-             "serviceName":"gpu-svc",
-             "servicePort":80,
-             "weight":50
-           }
-         ],
-         "targetGroupStickinessConfig":
-           {
-             "enabled":true,
-             "durationSeconds":200
-           }
-       }
-     }
+```bash
+if device=='xla':
+  from optimum.neuron import NeuronStableDiffusionPipeline
+elif device=='cuda' or device=='triton':
+  from diffusers import StableDiffusionPipeline
+…
+if device=='xla':
+  pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
+elif device=='cuda' or device=='triton':
+  pipe = StableDiffusionPipeline.from_pretrained(model_id,
+         safety_checker=None,torch_dtype=DTYPE).to("cuda")
 ```
+When [deploying](./sd21-a10g-cuda-deploy.yaml) a stable diffusion pipeline from Hugging Face, we employ a strategic approach to optimize the process. Instead of pulling the entire model, we selectively retrieve only the specific files required to load the model. These essential components include the model weights, configuration file, and any necessary tokenizer files for inference. By focusing on these crucial elements, we significantly expedite the deployment process. This targeted method not only speeds up deployment but also optimizes resource usage and minimizes overhead, resulting in a more efficient and streamlined operation overall.
 
-Additionally, it may take some time for the pods to launch into the model pipeline. It is essential to build readiness and health probes that inform the ALB which pods to target and which pods to recycle if they fail. Therefore we implemented a ping-like gRPC API returns the status of a model in the ModelServer, similar to [pytorch Health check API](https://pytorch.org/serve/inference_api.html#health-check-api). We use it to define the pod inference health and readiness to accept predictions requests. 
-First, we define it in the pod specification:
+In our solution, we've implemented a sophisticated traffic management system using AWS Application Load Balancer (ALB)-based Ingress. This system expertly directs incoming traffic to our [GPU-based and Inferentia-based node pools](./sd21-ing.yaml). At the heart of this setup is an Application Load Balancer, deployed via the [AWS Load Balancer Controller](https://kubernetes-sigs.github.io/aws-load-balancer-controller/), which efficiently distributes incoming requests across our various pods.
+
+We've designed two distinct configurations to cater to different optimization priorities. Our capacity-optimized version employs a straightforward approach, using a single Kubernetes service that evenly distributes traffic across all deployment options through round-robin routing. This ensures maximum utilization of available resources.
+For those more focused on cost efficiency, we've developed a cost-optimized option. This configuration takes a more nuanced approach to traffic management. It leverages the ingress level for traffic control, incorporating a specific annotation - `ingress.kubernetes.io/actions.weighted-routing`. This allows for more granular control over how traffic is distributed, potentially leading to significant cost savings.
+By offering these two configurations, we provide the flexibility to prioritize either capacity utilization or cost optimization, allowing users to tailor the solution to their specific needs and constraints.
+
+Additionally, pulling and loading the model takes 5-15 minutes for pod launches. For example, graph-based model inference like NeuronX requires loading the full model graph before handling inference requests, whereas Triton-based models support eager inference, processing graph operations as called and enabling transformations to run independently with immediate results. To avoid latency on the first real inference request, we call the model synthetically beforehand. 
+
+Readiness and health probes are essential to inform the ALB which pods to target and which to recycle if they fail. To facilitate this, we implemented a gRPC API similar to the PyTorch Health Check API, which returns the status of a model in the ModelServer. This API defines the pod’s inference health and readiness to accept prediction requests. First, we define it in the pod specification:
+
 ```yaml
       containers:
       - name: app
@@ -99,8 +92,8 @@ First, we define it in the pod specification:
           initialDelaySeconds: 60
           periodSeconds: 10
 ```
+Next, we define it in the ALB ingress:
 
-Second, we define it in the ALB ingress:
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -118,72 +111,94 @@ metadata:
     alb.ingress.kubernetes.io/success-codes: '200-301'
 ```
 
-![alt text](/aws-gpu-neuron-eks-sample-model-deploy.png)
-### Run-time
-Now that we have enabled the model inference endpoint on both GPU and Inferentia instances, we need to scale the compute capacity to meet user demand and fine-tuning system performance. To achieve this, we utilize Amazon CloudWatch Container Insights with Enhanced Observability for EKS. This service automatically discovers critical health metrics from AWS accelerators such as Inferentia and NVIDIA GPUs. By leveraging Container Insights dashboards, we can visualize these pre-configured metrics, allowing us to monitor the accelerated infrastructure and optimize workload usage effectively.
+Following the deployment, we proceed to test the quality of the generated images by sampling the web app. Below are two examples:
+![GPU-based inference example for qualitative tests](./figure2-gpu-gradio-sample.png)
+![Neuron-based inference example for qualitative tests](./figure3-inf-gradio-sample.png)
 
-Additionally, we use KEDA, a Kubernetes Event-driven Autoscaling tool, to manage the number of required pods. With KEDA, users can define metrics and thresholds, enabling automatic scaling based on workload demands. In our case, we prioritize optimizing for latency in the inference process. 
-![alt text](/aws-gpu-neuron-eks-sample-model-run.png)
+With the model inference endpoint now enabled on both GPU and Inferentia instances, we need to scale compute capacity to meet user demand and fine-tune performance. To achieve this, we use Amazon CloudWatch Container Insights with Enhanced Observability for EKS, which automatically discovers key health metrics from AWS accelerators like Inferentia and NVIDIA GPUs. Through Container Insights dashboards, we can visualize these pre-configured metrics, enabling effective monitoring of accelerated infrastructure and optimized workload usage.
 
-Therefore, we configure KEDA to trigger Horizontal Pod Autoscaler (HPA) to increase or decrease the number of pods when throughput per pod reaches a threshold that ensures acceptable service (latency). We determine this threshold based on experiments and observations. We will share the results in the next paragraph along with the data that led us to tune the compute accelerator allocation. Specifically, we will look for the breaking point with the Neuron and NVIDIA models we load.
+We configure KEDA to trigger the Horizontal Pod Autoscaler (HPA) to scale the number of pods up or down when the throughput per pod reaches a threshold that maintains acceptable latency. This threshold is determined through experiments and observations, where we specifically look for the breaking point—when latency exceeds the set thresholds—on models loaded on Neuron and NVIDIA accelerators (Figure 4) or when the compute usage reaches over 80% (Figure 5). 
+We load test the application for each compute accelerator and framework combination, such as Inf2, Trn1, or GPU with CUDA, NeuronX, or Triton. The results define the targetMetricValue that KEDA uses to scale the required number of k8s pods for each deployment combination. The breaking point occurs when throughput plateaus and latency exceeds 900 milliseconds. Below are the load tests conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores. We skipped the default CUDA compiler with L4 NVIDIA, as it did not meet the minimum latency requirements.
 
-In the KEDA `ScaledObject` config below, we specify the `Deployment` to contorl. We specify the `aws-cloudwatch` metric to use for the pod throughput (`targetMetricValue`) to control (in the `metadata.expression`). We also maintained minimal capacity of 2 pods denoted by `minReplicaCount`
+![Figure 4 - Inference latency and throughput per deployment unit (model-device-framework)](./figure4-breakpoint-latency.png)
+![Figure 5 - Compute accelerator utilization during load (neuron-core and GPU core)](./figure5-breakpoint-util.png)
+
+With the application's breaking points identified, we’ll configure four ScaledObject KEDA settings. Each configuration will specify which Deployment to control (e.g., `stable-diffusion-inf2`) and the AWS CloudWatch metric to use for pod throughput (defined in `metadata.expression`). We’ll apply targetMetricValue settings that correspond to the observed breaking points in Figures 4 and 5, and maintain a minimum capacity of 1 pod, indicated by `minReplicaCount`.
+
 ```yaml
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: stable-diffusion-gpu-hpa
+  name: stable-diffusion-inf2-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: stable-diffusion-gpu
-  minReplicaCount: 2
+    name: stable-diffusion-inf2
+  minReplicaCount: 1
   triggers:
     - type: aws-cloudwatch
       metadata:
-        namespace: AWS/ApplicationELB
-        expression: SELECT SUM(HTTPCode_Target_2XX_Count) 
-                    FROM SCHEMA("AWS/ApplicationELB", LoadBalancer,TargetGroup) 
-                    WHERE TargetGroup = 'targetgroup/tgname/guid' 
-                    AND LoadBalancer = 'app/albname/guid'
-        metricName: HTTPCode_Target_2XX_Count
-        minMetricValue: "2"
-        targetMetricValue: "100"
+        namespace: hw-agnostic-infer
+        expression: SELECT SUM("sd21-inf2-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: sd21-inf2-counter
+        minMetricValue: "1"
+        targetMetricValue: "105"
         metricUnit: Count
         awsRegion: us-west-2
 ```
-#### Analyzing Experimental Findings: Insights and Implications
-We initially wanted to test the quality of the generated images by sampling the web app. Below are two examples:
-![alt_text](/gpu-gradio-sample.png)
-![alt_text](/inf-gradio-sample.png)
 
-Next, we determined the `targetMetricValue` that defines the maximum throughput a single accelerator can process using SDKs such as Neuron, CUDA, and Triton. We measured maximum throughput by the processed load (CloudWatch metric `HTTPCode_Target_2XX_Count`) while ensuring latency remained at acceptable levels. Below are the load tests we conducted on A10G, L4 NVIDIA cores, and Inf2 and Trn1 Neuron cores. We skiped the default CUDA compiler becasue the minimal latency requirements did not met. 
-![Establish Inf2 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
+### Option 1 - Compute cost optimized configuration
+Next, we calculate cost of inference per second for each deployment unit based on the breaking points. 
 
-![Establish Trn1 core max throughput](/trn1-core-load-sd2-latency-throughput.png)
+| Deployment Unit       | Cost of Compute / Hour     | Throughput | Cost of Inference / Second |
+|-----------------------|----------------------------|------------|----------------------------|
+| (sd21, inf2, neuron)  | inf2.xlarge / $0.7582      | 105        | 0.00733                    |
+| (sd21, trn1, neuron)  | trn1.2xlarge / $1.3438     | 130        | 0.01023                    |
+| (sd21, g5, triton)    | g5.xlarge / $1.0060        | 90         | 0.01118                    |
+| (sd21, g6, triton)    | g6.xlarge / $0.8048        | 61         | 0.01320                    |
+| (sd21, g5, cuda)      | g5.xlarge / $1.0060        | 60         | 0.01677                    |
 
-![Establish A10G core with triton max throughput](/a10g-core-load-sd2-latency-throughput.png)
+Table 1 - Deployment unit cost of inference
 
-![Establish L4 core with triton max throughput](/l4-triton-core-load-sd2-latency-throughput.png)
+The cost of inference per second determines the weights assigned to each deployment unit. We configure a Kubernetes service for each deployment to control traffic routing and assign these services to ALB target groups as follows:
 
-We set the `targetMetricValue` for both GPUs, Inf2, and Trn1 KEDA `scaledobjects`. Specifically, 65 RPM for Trn1, 62 RPM for Inf2, 59 RPM for L4/Triton, and 74 RPM for A10G/Triton. 
+```json
+{
+ "type":"forward","forwardConfig":{
+ "targetGroups":[
+   {
+     "serviceName":"sd21-g5-cuda",
+     "servicePort":80,
+     "weight":15
+   },
+   {
+     "serviceName":"sd21-g5-triton",
+     "servicePort":80,
+     "weight":15
+   },
+   {
+     "serviceName":"sd21-g6-triton",
+     "servicePort":80,
+     "weight":10
+   },
+   {
+     "serviceName":"sd21-inf2",
+     "servicePort":80,
+     "weight":40
+   },
+   {
+     "serviceName":"sd21-trn1",
+     "servicePort":80,
+     "weight":20
+    }
+  ]
+}}
+```
 
-Finally, we simulated load on the ALB ingress endpoint and observed the workload distribution among the accelerator-SDK-based target groups. We noticed uniform throughput with consistent inference latency for each variant. The observed latencies are as follows:
+Figure 6 illustrates the optimal compute allocation based on inference cost. The `sd21-inf2` deployment handled 40% of total requests with minimal latency, while the remaining deployments were allocated per the ALB ingress configuration. Figure 6 displays effective throughput, indicated by HTTP code 200 (successful requests) and HTTP code 500 (failures), while maintaining optimal utilization levels—70% for Neuron cores and 90% for GPU cores.
 
-| Accelerator | SDK      | p90 Throughput (`HTTPCode_Target_2XX_Count`)   | Latency Level   | K8s target group                  |
-|-------------|----------|------------------------------------------------|-----------------|-----------------------------------|
-| Trn1        | Neuron   | 0.83 sec                                       | Acceptable      | `k8s-default-sd21trn1-14ba69eb11` |
-| A10G        | Triton   | 0.83 sec                                       | Acceptable      | `k8s-default-sd21g5tr-74cfcd12bf` |
-| Inf2        | Neuron   | 0.89 sec                                       | Acceptable      | `k8s-default-sd21inf2-3e2ecded08` |
-| L4          | Triton   | 0.91 sec                                       | Acceptable      | `k8s-default-sd21g6tr-4512700df4` |
-| A10G        | Cuda     | 1.34 sec                                       | Unacceptable    | `k8s-default-sd21g5cu-2ea1613e96` |
+![Figure 6 - Cost optimized deployment with weighted load balancing](./figure6-cost-optimized-deploy.png)
+![Figure 7 - Cost optimized deployment HTTP throughput and compute usage](./figure7-cost-optimized-throughput.png)
 
-![optimal throughput](/multi-accel-sdk-latency-throughput-24hrs.png)
-![optimal throughput](/multi-accel-sdk-pods-24hrs.png)
-![optimal throughput](/multi-accel-sdk-gpu-neuron-util-24hrs.png)
-
-Next steps are:
-- Set the Karpenter `karpenter.sh/v1beta1` `NodePool` priorities based on the results and cost 
-- Set the ALB `networking.k8s.io/v1` `Ingress` priorities based on the results and cost
-- Watch the priorities being applied for optimal cost and performance 
+### Option 2 - Compute capacity optimized configuration

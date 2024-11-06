@@ -1,0 +1,121 @@
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sd21-l4-triton
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sd21-l4-triton
+  minReplicaCount: 1
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: "hw-agnostic-infer"
+        expression: SELECT SUM("sd21-l4-triton-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: "sd21-l4-triton-counter"
+        minMetricValue: "0"
+        targetMetricValue: "60"
+        metricUnit: Count
+        awsRegion: us-west-2
+      authenticationRef:
+        name: keda-trigger-auth-aws-credentials
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sd21-a10g-triton
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sd21-a10g-triton
+  minReplicaCount: 1
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: "hw-agnostic-infer"
+        expression: SELECT SUM("sd21-a10g-triton-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: "sd21-a10g-triton-counter"
+        minMetricValue: "0"
+        targetMetricValue: "88"
+        metricUnit: Count
+        awsRegion: us-west-2
+      authenticationRef:
+        name: keda-trigger-auth-aws-credentials
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sd21-a10g-cuda
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sd21-a10g-cuda
+  minReplicaCount: 1
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: "hw-agnostic-infer"
+        expression: SELECT SUM("sd21-a10g-cuda-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: "sd21-a10g-cuda-counter"
+        minMetricValue: "0"
+        targetMetricValue: "63"
+        metricUnit: Count
+        awsRegion: us-west-2
+      authenticationRef:
+        name: keda-trigger-auth-aws-credentials
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sd21-inf2
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sd21-inf2
+  minReplicaCount: 1
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: "hw-agnostic-infer"
+        expression: SELECT SUM("sd21-inf2-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: "sd21-inf2-counter"
+        minMetricValue: "0"
+        targetMetricValue: "110"
+        metricUnit: Count
+        awsRegion: us-west-2
+      authenticationRef:
+        name: keda-trigger-auth-aws-credentials
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: sd21-trn1
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sd21-trn1
+  minReplicaCount: 1
+  triggers:
+    - type: aws-cloudwatch
+      metadata:
+        namespace: "hw-agnostic-infer"
+        expression: SELECT SUM("sd21-trn1-counter") FROM SCHEMA("hw-agnostic-infer")
+        metricName: "sd21-trn1-counter"
+        minMetricValue: "0"
+        targetMetricValue: "120"
+        metricUnit: Count
+        awsRegion: us-west-2
+      authenticationRef:
+        name: keda-trigger-auth-aws-credentials
+---
