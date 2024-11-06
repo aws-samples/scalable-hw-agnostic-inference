@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vit-g6
+spec:
+  selector:
+    app: vit-g6
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: NodePort

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vit-g6
+  name: vit-g6
+spec:
+  selector:
+    matchLabels:
+      app: vit-g6
+      appalb: vit-serve
+  template:
+    metadata:
+      labels:
+        app: vit-g6
+        appalb: vit-serve
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: g6-nodepool
+      # serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/stablediffusion:amd64-cuda
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /dev/shm
+            name: dshm
+        command: ["/run-vit.sh"]
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+        env:
+        - name: DEVICE
+          value: "cuda"
+        - name: COMPILED_MODEL_ID
+          value: "google/vit-base-patch16-224"
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      #- name: workdir
+      #  emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory
