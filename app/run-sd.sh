@@ -11,5 +11,5 @@ if [ "$(uname -i)" = "x86_64" ]; then
     pip install click nvitop
     pip install torch torchvision --upgrade --extra-index-url https://download.pytorch.org/whl/cu121
   fi
-  uvicorn run-sd2:app --host=0.0.0.0 
+  uvicorn run-sd:app --host=0.0.0.0 
 fi
