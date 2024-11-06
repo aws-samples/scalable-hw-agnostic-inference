@@ -114,10 +114,10 @@ metadata:
 ```
 
 Following the deployment, we proceed to test the quality of the generated images by sampling the web app. Below are two examples:
-![GPU-based inference example for qualitative tests](./figure2-gpu-gradio-sample.png)
-*GPU-based inference example for qualitative tests*
-![Neuron-based inference example for qualitative tests](./figure3-inf-gradio-sample.png)
-*Neuron-based inference example for qualitative tests*
+![Figure 2 - GPU-based inference example for qualitative tests](./figure2-gpu-gradio-sample.png)
+*Figure 2 - GPU-based inference example for qualitative tests*
+![Figure 3 - Neuron-based inference example for qualitative tests](./figure3-inf-gradio-sample.png)
+*Figure 3 - Neuron-based inference example for qualitative tests*
 
 With the model inference endpoint now enabled on both GPU and Inferentia instances, we need to scale compute capacity to meet user demand and fine-tune performance. To achieve this, we use Amazon CloudWatch Container Insights with Enhanced Observability for EKS, which automatically discovers key health metrics from AWS accelerators like Inferentia and NVIDIA GPUs. Through Container Insights dashboards, we can visualize these pre-configured metrics, enabling effective monitoring of accelerated infrastructure and optimized workload usage.
 
