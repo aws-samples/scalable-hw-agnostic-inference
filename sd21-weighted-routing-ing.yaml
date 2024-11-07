@@ -15,6 +15,7 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/load-balancer-name: sd21
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=10
     alb.ingress.kubernetes.io/actions.weighted-routing: >
        {"type":"forward","forwardConfig":{"targetGroups":[{"serviceName":"sd21-a10g-cuda","servicePort":80,"weight":15},{"serviceName":"sd21-a10g-triton","servicePort":80,"weight":15},{"serviceName":"sd21-l4-triton","servicePort":80,"weight":10},{"serviceName":"sd21-inf2","servicePort":80,"weight":40},{"serviceName":"sd21-trn1","servicePort":80,"weight":20}],"targetGroupStickinessConfig":{"enabled":true,"durationSeconds":200}}}
   labels:          

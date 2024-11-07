@@ -17,7 +17,7 @@ spec:
         expression: SELECT SUM("sd21-l4-triton-counter") FROM SCHEMA("hw-agnostic-infer")
         metricName: "sd21-l4-triton-counter"
         minMetricValue: "0"
-        targetMetricValue: "60"
+        targetMetricValue: "70"
         metricUnit: Count
         awsRegion: us-west-2
       authenticationRef:
@@ -65,7 +65,7 @@ spec:
         expression: SELECT SUM("sd21-a10g-cuda-counter") FROM SCHEMA("hw-agnostic-infer")
         metricName: "sd21-a10g-cuda-counter"
         minMetricValue: "0"
-        targetMetricValue: "60"
+        targetMetricValue: "83"
         metricUnit: Count
         awsRegion: us-west-2
       authenticationRef:
