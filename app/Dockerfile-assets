@@ -2,7 +2,7 @@ ARG image
 
 FROM public.ecr.aws/docker/library/python:latest as base
 RUN apt-get update -y --fix-missing
-RUN apt-get install -y python3-venv g++ gettext-base jq
+RUN apt-get install -y python3-venv g++ gettext-base jq bc
 RUN mkdir -p /etc/apt/keyrings/
 RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 RUN echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
@@ -11,6 +11,7 @@ RUN apt-get install -y kubectl
 RUN kubectl version --client
 RUN python -m pip install wget
 RUN python -m pip install awscli
+RUN pip install boto3
 RUN mkdir /root/.aws
 ADD config /root/.aws
 
