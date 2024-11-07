@@ -6,7 +6,7 @@ This post outlines how to integrate AWS Inferentia instances into an existing Am
 
 The solution uses [KEDA](https://keda.sh/), a Kubernetes-based autoscaler, to control the number of accelerated compute nodes based on optimal model throughput, which is measured by the Application Load Balancer (ALB). The blog also demonstrates the use of [Karpenter](https://karpenter.sh/) to simplify the provisioning of mixed compute resources in Kubernetes clusters.
 
-In our exploration, we examine the benefits of various accelerators for inferencing the [Stable Diffusion](https://stability.ai/stable-image) model, a generative AI model capable of producing unique, photorealistic images from text and image prompts. We focus on NVIDIA-based accelerators such as the A10G (EC2 G5 instances) and L4 (EC2 G6 instances), as well as AWS-specific options like Inferentia (EC2 inf2 instances) and Trainium (EC2 trn1 instances).
+In this exploration, we assess the benefits of various accelerators for inferencing the [Stable Diffusion](https://stability.ai/stable-image) model, a generative AI capable of producing unique, photorealistic images from text and image prompts. Our focus includes NVIDIA-based accelerators, such as the A10G (EC2 G5 instances) and L4 (EC2 G6 instances), along with AWS-specific options like Inferentia (EC2 inf2 instances) and Trainium (EC2 trn1 instances). We also extend our tooling to models such as [Mistral](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3), [Llama](https://huggingface.co/meta-llama/Llama-3.2-1B), [BERT](https://huggingface.co/distilbert/distilbert-base-uncased), image classification [ViT](https://huggingface.co/tasks/image-classification), and object detection [YOLOS](https://huggingface.co/hustvl/yolos-tiny).
 
 For our implementation, we utilize [HuggingFace](https://huggingface.co/) as the open-source platform, leveraging its tools and libraries for building, training, and deploying state-of-the-art models. To effectively use these accelerators, we employ Triton for NVIDIA's GPUs and PyTorch NeuronX for AWS Inferentia and Trainium. These tools are crucial as they construct the computational graph in advance, optimizing the inference process by compiling and arranging operations for enhanced performance.
 
@@ -213,3 +213,22 @@ Figure 6 illustrates the optimal compute allocation based on inference cost. The
 
 
 ### Option 2 - Compute capacity optimized configuration
+When compute capacity is limited, your inference system must continue serving user requests while minimizing latency and maximizing application availability. To achieve this, we normalized the throughput of deployment units listed in Table 1 and consolidated the Kubernetes services into a single service that uses round-robin to distribute requests across deployment units, allocating resources evenly based on available capacity.
+
+The adjusted throughput per deployment unit aims to approximate uniformity, enabling nearly equal throughput across units as the load balancer distributes requests in a round-robin fashion. However, throughput also factors in both maximum and average latency per unit, allowing faster options like sd21-inf2 and sd21-trn1 to handle a higher volume of requests when possible. We used the deployment unit maximum throughput (Table 1) and observed latency to calculate the target throughput as follow:
+
+Target Throughput= ∑(Max Throughput (RPS))/Number of Deployment Units
+
+Then for each deployment unit, we set the Adjusted Throughput to the minimum of either:
+
+Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
+
+| Deployment&nbsp;Unit       | Latency&nbsp;(sec) | Max&nbsp;Throughput&nbsp;(RPS) | Cost&nbsp;of&nbsp;Inference&nbsp;/&nbsp;Second | Adjusted&nbsp;Throughput |
+|----------------------------|--------------------|--------------------------------|----------------------------------------------|---------------------------|
+| (sd21,&nbsp;inf2,&nbsp;neuron)  | 0.67           | 105                           | 0.00733                                     | 89.2                      |
+| (sd21,&nbsp;trn1,&nbsp;neuron)  | 0.51           | 130                           | 0.01023                                     | 89.2                      |
+| (sd21,&nbsp;g5,&nbsp;triton)    | 0.68           | 90                            | 0.01118                                     | 89.2                      |
+| (sd21,&nbsp;g6,&nbsp;triton)    | 0.96           | 61                            | 0.01320                                     | 61.0                      |
+| (sd21,&nbsp;g5,&nbsp;cuda)      | 0.92           | 60                            | 0.01677                                     | 60.0                      |
+
+*Table 2 - Deployment unit throughput optimized for compute capacity*
