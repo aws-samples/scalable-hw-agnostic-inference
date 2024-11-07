@@ -41,7 +41,7 @@ DTYPE = torch.bfloat16
 if device=='xla':
   from optimum.neuron import NeuronStableDiffusionPipeline 
 elif device=='cuda' or device=='triton':
-  from diffusers import StableDiffusionPipeline
+  from diffusers import DiffusionPipeline
 
 from diffusers import DDIMScheduler
 
