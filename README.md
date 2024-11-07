@@ -223,12 +223,12 @@ Then for each deployment unit, we set the Adjusted Throughput to the minimum of 
 
 Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
 
-| Deployment Unit       | Latency (sec) | Max Throughput (RPS) | Cost of Inference / Second | Adjusted Throughput |
-|-----------------------|---------------|----------------------|----------------------------|---------------------|
-| (sd21, inf2, neuron)  | 0.67          | 105                  | 0.00733                    | 89.2                |
-| (sd21, trn1, neuron)  | 0.51          | 130                  | 0.01023                    | 89.2                |
-| (sd21, g5, triton)    | 0.68          | 90                   | 0.01118                    | 89.2                |
-| (sd21, g6, triton)    | 0.96          | 61                   | 0.01320                    | 61.0                |
-| (sd21, g5, cuda)      | 0.92          | 60                   | 0.01677                    | 60.0                |
+| Deployment Unit         | Latency (sec) | Max Throughput (RPS) | Cost of Inference / Second | Adjusted Throughput |
+|-------------------------|---------------|----------------------|----------------------------|---------------------|
+| (sd21, inf2, neuron)    | 0.67          | 105                  | 0.00733                    | 89.2                |
+| (sd21, trn1, neuron)    | 0.51          | 130                  | 0.01023                    | 89.2                |
+| (sd21, g5, triton)      | 0.68          | 90                   | 0.01118                    | 89.2                |
+| (sd21, g6, triton)      | 0.96          | 61                   | 0.01320                    | 61.0                |
+| (sd21, g5, cuda)        | 0.92          | 60                   | 0.01677                    | 60.0                |
 
 *Table 2 - Deployment unit throughput optimized for compute capacity*
