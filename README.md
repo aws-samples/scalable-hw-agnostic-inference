@@ -216,11 +216,16 @@ Figure 6 illustrates the optimal compute allocation based on inference cost. The
 When compute capacity is limited, your inference system must continue serving user requests while minimizing latency and maximizing application availability. To achieve this, we normalized the throughput of deployment units listed in Table 1 and consolidated the Kubernetes services into a single service that uses round-robin to distribute requests across deployment units, allocating resources evenly based on available capacity.
 
 The adjusted throughput per deployment unit aims to approximate uniformity, enabling nearly equal throughput across units as the load balancer distributes requests in a round-robin fashion. However, throughput also factors in both maximum and average latency per unit, allowing faster options like sd21-inf2 and sd21-trn1 to handle a higher volume of requests when possible. We used the deployment unit maximum throughput (Table 1) and observed latency to calculate the target throughput as follow:
+Target Throughput= ∑(Max Throughput (RPS))/Number of Deployment Units
+
 \[
 \text{Target Throughput} = \frac{\sum (\text{Max Throughput (RPS)})}{\text{Number of Deployment Units}}
 \] 
 
 Then for each deployment unit, we set the Adjusted Throughput to the minimum of either:
+
+Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
+
 \[
 \text{Adjusted Throughput}_{i} = \min(\text{Target Throughput}, \text{Max Throughput}_{i})
 \] 
