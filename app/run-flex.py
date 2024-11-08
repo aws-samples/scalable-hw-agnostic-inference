@@ -41,10 +41,11 @@ DTYPE = torch.bfloat16
 if device=='xla':
   from optimum.neuron import NeuronStableDiffusionPipeline 
 elif device=='cuda' or device=='triton':
-  from diffusers import DiffusionPipeline
+  from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler, UNet2DConditionModel
 
-from diffusers import DDIMScheduler
-
+def use_DPM_solver(pipe):
+    pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+    return pipe
 
 def benchmark(n_runs, test_name, model, model_inputs):
     if not isinstance(model_inputs, tuple):
@@ -106,34 +107,12 @@ if device=='xla':
 elif device=='cuda' or device=='triton':
   #pipe = DiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
   #pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
-  pipe = DiffusionPipeline.from_pretrained(model_id)
-  if device=='triton':
-    pipe.unet.to(memory_format=torch.channels_last)
-    pipe.vae.to(memory_format=torch.channels_last)
-    pipe.unet = torch.compile(
-      pipe.unet, 
-      fullgraph=True, 
-      mode="max-autotune-no-cudagraphs"
-    )
-
-    pipe.text_encoder = torch.compile(
-      pipe.text_encoder,
-      fullgraph=True,
-      mode="max-autotune-no-cudagraphs",
-    )
-
-    pipe.vae.decoder = torch.compile(
-      pipe.vae.decoder,
-      fullgraph=True,
-      mode="max-autotune-no-cudagraphs",
-    )
-
-    pipe.vae.post_quant_conv = torch.compile(
-      pipe.vae.post_quant_conv,
-      fullgraph=True,
-      mode="max-autotune-no-cudagraphs",
-    )
-  pipe.enable_attention_slicing()
+  pipe = StableDiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1",
+    unet = UNet2DConditionModel.from_pretrained("ttj/flex-diffusion-2-1", subfolder="2-1/unet", torch_dtype=torch.float16),
+    torch_dtype=torch.float16,
+  )
+  pipe = use_DPM_solver(pipe).to("cuda")
+  pipe = pipe.to("cuda")
 
 def text2img(prompt):
   start_time = time.time()
