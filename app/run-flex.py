@@ -104,8 +104,9 @@ class LatencyCollector:
 if device=='xla':
   pipe = NeuronStableDiffusionPipeline.from_pretrained(compiled_model_id)
 elif device=='cuda' or device=='triton':
-  pipe = DiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
-  pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+  #pipe = DiffusionPipeline.from_pretrained(model_id,safety_checker=None,torch_dtype=DTYPE).to("cuda")
+  #pipe.scheduler = DDIMScheduler.from_config(pipe.scheduler.config)
+  pipe = DiffusionPipeline.from_pretrained(model_id)
   if device=='triton':
     pipe.unet.to(memory_format=torch.channels_last)
     pipe.vae.to(memory_format=torch.channels_last)
