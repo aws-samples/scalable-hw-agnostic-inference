@@ -237,7 +237,7 @@ Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
 ![Figure 8 - Capacity optimized deployment with equal round-robin load balancing](./figures/figure8-capacity-optimized-deploy.png)
 *Figure 8 - Capacity optimized deployment with equal round-robin load balancing*
 
-![Figure 9 - Capacity optimized deployment HTTP throughput and compute usage](./figures/figure8-ptimized-throughput.png)
+![Figure 9 - Capacity optimized deployment HTTP throughput and compute usage](./figures/figure9-capacity-optimized-throughput.png)
 *Figure 9 - Capacity optimized deployment HTTP throughput and compute usage*
 
 ![Figure 10 - Capacity optimized instance types and nodepool distribution](./figures/figure10-capacity-optimized-intance-nodepool.png)
