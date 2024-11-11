@@ -27,6 +27,7 @@ metadata:
     alb.ingress.kubernetes.io/success-codes: '200-301'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/target-group-attributes: stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=10
     alb.ingress.kubernetes.io/load-balancer-name: sd21
     alb.ingress.kubernetes.io/actions.weighted-routing: >
        {"type":"forward","forwardConfig":{"targetGroups":[{"serviceName":"sd21","servicePort":80,"weight":100}],"targetGroupStickinessConfig":{"enabled":true,"durationSeconds":200}}}
