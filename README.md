@@ -233,12 +233,15 @@ Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
 
 *Table 2 - Deployment unit throughput optimized for compute capacity*
 
-
+Figure 8 illustrates the system's response to a sudden drop in supply, where a limit was imposed on L4 from 21:20 to 23:20. During this period, inf2 and trn1 pods started up, processed the required requests, and maintained overall system throughput without errors (as shown in Figure 9). At 23:20, the limit on L4 was removed, allowing L4-based pods to handle more requests, while inf2 and trn1 pods stabilized.
 ![Figure 8 - Capacity optimized deployment with equal round-robin load balancing](./figures/figure8-capacity-optimized-deploy.png)
 *Figure 8 - Capacity optimized deployment with equal round-robin load balancing*
 
 ![Figure 9 - Capacity optimized deployment HTTP throughput and compute usage](./figures/figure9-capacity-optimized-throughput.png)
 *Figure 9 - Capacity optimized deployment HTTP throughput and compute usage*
 
-![Figure 10 - Capacity optimized instance types and nodepool distribution](./figures/figure10-capacity-optimized-intance-nodepool.png)
-*Figure 10 - Capacity optimized instance types and nodepool distribution*
+### Option 3 - Failover to compute-optimized configuration with fallback to cost-optimized
+Next, we’ll run an operator that monitors the capacity of all Karpenter node pools and reacts to `insufficient capacity`. When a capacity issue is detected, the system switches to a capacity-optimized configuration for the rest of the load cycle, then automatically falls back to a cost-optimized setup at the start of a new load cycle by observing overall system throughput.
+
+![Figure 10 - Failover to compute-optimized configuration with fallback to cost-optimized](./figures/figure10-cost-capacity-lover-fallback.png)
+*Figure 9 - Failover to compute-optimized configuration with fallback to cost-optimized*
