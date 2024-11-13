@@ -89,7 +89,7 @@ spec:
         expression: SELECT SUM("sd21-inf2-counter") FROM SCHEMA("hw-agnostic-infer")
         metricName: "sd21-inf2-counter"
         minMetricValue: "0"
-        targetMetricValue: "105"
+        targetMetricValue: "100"
         metricUnit: Count
         awsRegion: us-west-2
       authenticationRef:
