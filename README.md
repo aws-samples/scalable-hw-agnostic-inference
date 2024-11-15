@@ -241,7 +241,11 @@ Figure 8 illustrates the system's response to a sudden drop in supply, where a l
 *Figure 9 - Capacity optimized deployment HTTP throughput and compute usage*
 
 ### Option 3 - Failover to compute-optimized configuration with fallback to cost-optimized
-Next, we’ll run an operator that monitors the capacity of all Karpenter node pools and reacts to `insufficient capacity`. When a capacity issue is detected, the system switches to a capacity-optimized configuration for the rest of the load cycle, then automatically falls back to a cost-optimized setup at the start of a new load cycle by observing overall system throughput.
+In the experiment, the **insufficient capacity for Inf2** was simulated on **11/14**, prompting the controller to initiate a failover to the compute-optimized configuration to maintain throughput. The controller seamlessly transitioned to this configuration, managing the remaining load of the cycle without impacting latency, as seen in the consistent inference performance.
 
-![Figure 10 - Failover to compute-optimized configuration with fallback to cost-optimized](./figures/figure10-cost-capacity-lover-fallback.png)
-*Figure 9 - Failover to compute-optimized configuration with fallback to cost-optimized*
+At the **beginning of the next wave on 11/15**, when sufficient Inf2 capacity became available, the controller detected this change and automatically reverted to the cost-optimized allocation. This fallback ensured that the system could capitalize on cost savings while meeting performance requirements, as reflected in the stable throughput and controlled utilization of resources.
+
+![Figure 10 - Failover to capacity-optimized configuration with fallback to cost-optimized throghput by capacity pool](./figures/figure10-cost-capacity-failover-fallback.png)
+*Figure 10 - Failover to capacity-optimized configuration with fallback to cost-optimized throughput by capacity pool*
+![Figure 11 - Failover to compute-optimized configuration with fallback to cost-optimized](./figures/figure11-cost-capacity-failover-fallback-throughput.png)
+*Figure 11 - Failover to compute-optimized configuration with fallback to cost-optimized total throughput and utilization*
