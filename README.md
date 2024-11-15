@@ -243,5 +243,7 @@ Figure 8 illustrates the system's response to a sudden drop in supply, where a l
 ### Option 3 - Failover to compute-optimized configuration with fallback to cost-optimized
 Next, we’ll run an operator that monitors the capacity of all Karpenter node pools and reacts to `insufficient capacity`. When a capacity issue is detected, the system switches to a capacity-optimized configuration for the rest of the load cycle, then automatically falls back to a cost-optimized setup at the start of a new load cycle by observing overall system throughput.
 
-![Figure 10 - Failover to compute-optimized configuration with fallback to cost-optimized](./figures/figure10-cost-capacity-lover-fallback.png)
-*Figure 9 - Failover to compute-optimized configuration with fallback to cost-optimized*
+![Figure 10 - Failover to capacity-optimized configuration with fallback to cost-optimized throghput by capacity pool](./figures/figure10-cost-capacity-failover-fallback.png)
+*Figure 10 - Failover to capacity-optimized configuration with fallback to cost-optimized throughput by capacity pool*
+![Figure 11 - Failover to compute-optimized configuration with fallback to cost-optimized](./figures/figure11-cost-capacity-failover-fallback-throughput.png)
+*Figure 11 - Failover to compute-optimized configuration with fallback to cost-optimized total throughput and utilization*
