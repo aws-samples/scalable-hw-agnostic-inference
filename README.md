@@ -217,11 +217,11 @@ When compute capacity is limited, your inference system must continue serving us
 
 The adjusted throughput per deployment unit aims to approximate uniformity, enabling nearly equal throughput across units as the load balancer distributes requests in a round-robin fashion. However, throughput also factors in both maximum and average latency per unit, allowing faster options like sd21-inf2 and sd21-trn1 to handle a higher volume of requests when possible. We used the deployment unit maximum throughput (Table 1) and observed latency to calculate the target throughput as follow:
 
-Target Throughput= ∑(Max Throughput (RPS))/Number of Deployment Units
+$$\text{Target Throughput} = \frac{\sum \text{Max Throughput (RPS)}}{\text{Number of Deployment Units}}$$
 
 Then for each deployment unit, we set the Adjusted Throughput to the minimum of either:
 
-Adjusted Throughput_i=min(Target Throughput,Max Throughput_i)
+$$\text{Adjusted Throughput}_i = \min(\text{Target Throughput}, \text{Max Throughput}_i)$$
 
 | Deployment&nbsp;Unit       | Latency&nbsp;(sec) | Max&nbsp;Throughput&nbsp;(RPS) | Cost&nbsp;of&nbsp;Inference&nbsp;/&nbsp;Second | Adjusted&nbsp;Throughput |
 |----------------------------|--------------------|--------------------------------|----------------------------------------------|---------------------------|
