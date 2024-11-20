@@ -273,13 +273,34 @@ In simplified case (option1 and option2), the system switches between only two s
 - $D_{cap}(t)=1-D_{cost}(t)$ is a binary indicator for the capacity-optimized state.
 
 The controller switching logic is:
-![controoler-switch-logic](./figures/equation0-switchlogic.png)
+
+$$
+T_{\text{throughput}}(t) =
+\begin{cases} 
+T_{\text{cost}}(t), & \text{if } D_{\text{cost}}(t) = 1 \\
+T_{\text{cap}}(t), & \text{if } D_{\text{cap}}(t) = 1
+\end{cases}
+$$
 
 $$ w_{\text{cost}}(t) = D_{\text{cost}}(t), \quad w_{\text{cap}}(t) = 1 - D_{\text{cost}}(t) $$
 
 The resulting throughput and cost are determined by:
-![resultcost](./figures/equation1-resultcost.png)
-![resultthroughput](./figures/equation2-resultthroughput.png)
+
+$$
+T_{\text{throughput}}(t) =
+\begin{cases} 
+T_{\text{cost}}(t), & \text{if } D_{\text{cost}}(t) = 1 \\
+T_{\text{cap}}(t), & \text{if } D_{\text{cap}}(t) = 1
+\end{cases}
+$$
+
+$$
+C_{\text{total}}(t) =
+\begin{cases} 
+C_{\text{unit}}^{(\text{cost})}, & \text{if } D_{\text{cost}}(t) = 1 \\
+C_{\text{unit}}^{(\text{cap})}, & \text{if } D_{\text{cap}}(t) = 1
+\end{cases}
+$$
 
 By switching to step functions, we replace the continuous allocation $w_i(t)$ with binary decisions $D_{\text{cost}}(t)$ and $D_{\text{cap}}(t)$, as this eliminates the need for dynamically balancing traffic across $N$ (currently only 5 deployment units). This approach simplifies the controller and creates clear transitions between cost-optimized and capacity-optimized states, governed by $A_{\text{capacity}}^{(\text{cost})}$. 
 
