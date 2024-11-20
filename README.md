@@ -154,6 +154,32 @@ spec:
         metricUnit: Count
         awsRegion: us-west-2
 ```
+### Capacity dynamics
+Our solution distributes traffic across multiple capacity pools that deploys $D_i$ based on available capacity, cost and efficiency. It also supports dynamic allocation $w_i$ that are adjusted over time based on real-time availability and workload demands. Finally, the solution achieves a smooth transition across pools avoiding abrupt changes as follow:
+
+$$\max_{w_1(t), \dots, w_N(t)} \int_{0}^{T_{\text{end}}} 
+\left( 
+\sum_{i=1}^N T_{\text{throughput}}^{(i)}(t) - \lambda \sum_{i=1}^N w_i(t) C_{\text{unit}}^{(i)}
+\right) dt $$
+
+- $w_i(t)$: Represents the routing weights for $D_i$.
+- $T_{\text{throughput}}^{(i)}(t)$: Throughput contribution from $D_i$ at time $t$.
+- $C_{\text{unit}}^{(i)}$: Cost per inference from $D_i$.
+- $\lambda$: A trade-off parameter balancing throughput and cost optimization.
+
+In practical scenarios, the majority of inference requests can be handled effectively by a cost-optimized pool, such as Inf2. Capacity-optimized pools are reserved as a fallback option, stepping in only when the cost-optimized resources are insufficient to meet demand. This approach balances resource efficiency with reliability. Also, managing continuous weight distributions across multiple pools—especially with five or more—introduces unnecessary complexity for minimal performance gains. By grouping pools into two distinct categories, the system achieves better scalability and more predictable behavior, simplifying resource management without sacrificing performance. Finally, a binary step function ensures the system prioritizes the use of cost-optimized pools wherever possible, effectively minimizing operational expenses. Meanwhile, the fallback mechanism guarantees that throughput requirements are met, even during periods of constrained capacity. This approach strikes an optimal balance between cost efficiency and performance reliability. Therefore we simplified the general case to a two-step function that supports **Cost-optimized** deployment (option 1) with lowest $C_{\text{unit}}^{(i)}$ e.g., inf2; and **Capacity-optimized** deployment (option 2) with higher $C_{\text{unit}}^{(i)}$ but with greater availability. 
+
+This grouping simplifies the optimization function to:
+
+$$\max_{w_{\text{cost}}(t), w_{\text{cap}}(t)} \int_{0}^{T_{\text{end}}} 
+\left( 
+T_{\text{throughput}}(t) - \lambda C_{\text{total}}(t)
+\right) dt $$
+
+where:
+- $T_{\text{throughput}}(t)=w_{cost}(t)T_{cost}(t)+w_{cap}(t)T_{cap}(t)$
+- $C_{total}(t)=w_{cost}(t)C_{unit}^{(cost)}+w_{cap}(t)C_{unit}^{(cost)}$
+- $w_{cost}(t)+w_{cap}(t)=1$
 
 ### Option 1 - Compute cost optimized configuration
 Next, we calculate cost of inference per second for each deployment unit based on the breaking points. 
@@ -241,6 +267,22 @@ Figure 8 illustrates the system's response to a sudden drop in supply, where a l
 *Figure 9 - Capacity optimized deployment HTTP throughput and compute usage*
 
 ### Option 3 - Failover to compute-optimized configuration with fallback to cost-optimized
+
+In simplified case (option1 and option2), the system switches between only two states out of five deployment units based on the availability of cost-optimized capacity $A_{cap}^{(cost)}(t)$:
+- $D_{cost}(t)$ is a binary indicator for the cost-optimized state.
+- $D_{cap}(t)=1-D_{cost}(t)$ is a binary indicator for the capacity-optimized state.
+
+The controller switching logic is:
+![controoler-switch-logic](./figures/equation0-switchlogic.png)
+
+$$ w_{\text{cost}}(t) = D_{\text{cost}}(t), \quad w_{\text{cap}}(t) = 1 - D_{\text{cost}}(t) $$
+
+The resulting throughput and cost are determined by:
+![resultcost](./figures/equation1-resultcost.png)
+![resultthroughput](./figures/equation2-resultthroughput.png)
+
+By switching to step functions, we replace the continuous allocation $w_i(t)$ with binary decisions $D_{\text{cost}}(t)$ and $D_{\text{cap}}(t)$, as this eliminates the need for dynamically balancing traffic across $N$ (currently only 5 deployment units). This approach simplifies the controller and creates clear transitions between cost-optimized and capacity-optimized states, governed by $A_{\text{capacity}}^{(\text{cost})}$. 
+
 In the experiment, the **insufficient capacity for Inf2** was simulated on **11/14**, prompting the controller to initiate a failover to the compute-optimized configuration to maintain throughput. The controller seamlessly transitioned to this configuration, managing the remaining load of the cycle without impacting latency, as seen in the consistent inference performance.
 
 At the **beginning of the next wave on 11/15**, when sufficient Inf2 capacity became available, the controller detected this change and automatically reverted to the cost-optimized allocation. This fallback ensured that the system could capitalize on cost savings while meeting performance requirements, as reflected in the stable throughput and controlled utilization of resources.
