@@ -275,10 +275,10 @@ In simplified case (option1 and option2), the system switches between only two s
 The controller switching logic is:
 
 $$
-T_{\text{throughput}}(t) =
+D_{\text{cost}}(t) =
 \begin{cases} 
-T_{\text{cost}}(t), & \text{if } D_{\text{cost}}(t) = 1 \\
-T_{\text{cap}}(t), & \text{if } D_{\text{cap}}(t) = 1
+1, & \text{if } A_{\text{capacity}}^{(\text{cost})}(t) > A_{\text{threshold}} \\
+0, & \text{if } A_{\text{capacity}}^{(\text{cost})}(t) \leq A_{\text{threshold}}
 \end{cases}
 $$
 
