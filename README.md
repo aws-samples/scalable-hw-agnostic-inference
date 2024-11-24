@@ -155,34 +155,27 @@ spec:
         awsRegion: us-west-2
 ```
 ### Capacity dynamics
-Our solution distributes traffic across multiple capacity pools that deploys $D_i$ based on available capacity, cost and efficiency. It also supports dynamic allocation $w_i$ that are adjusted over time based on real-time availability and workload demands. Finally, the solution achieves a smooth transition across pools avoiding abrupt changes as follow:
+Our solution distributes traffic across multiple deployment units $D_i$ based on available capacity $A_i$ (1 when available and 0 if unavailable), cost, $C_i$ and latency, $L_i$. The assigned weight $w_i$ is based on throughput, $T_i$, of $D_i$ when at maximum capacity. Cost per inference, $C_i$, and Latency of inference, $L_i$:
 
-$$\max_{w_1(t), \dots, w_N(t)} \int_{0}^{T_{\text{end}}} 
-\left( 
-\sum_{i=1}^N T_{\text{throughput}}^{(i)}(t) - \lambda \sum_{i=1}^N w_i(t) C_{\text{unit}}^{(i)}
-\right) dt $$
+$$w_i(t) = \frac{\frac{T_j(t)}{C_i L_i} A_i(t)}{\sum_{j=1}^{N} \frac{T_j(t)}{C_j L_j} A_{j}(t)}$$
 
-- $w_i(t)$: Represents the routing weights for $D_i$.
-- $T_{\text{throughput}}^{(i)}(t)$: Throughput contribution from $D_i$ at time $t$.
-- $C_{\text{unit}}^{(i)}$: Cost per inference from $D_i$.
-- $\lambda$: A trade-off parameter balancing throughput and cost optimization.
+The efficiency of deployment $D_i$ is represented in terms of throughput relative to cost and latency. i.e., $\frac{T_i(t)}{C_i L_i}$, $A_i(t)=1$ ensures that only available $D_i$ are assigned traffic, otherwise $A_i(t)=0$. The denominator normalizes the weights so that they sum to 1, ensuring proper traffic distribution. 
 
-In practical scenarios, the majority of inference requests can be handled effectively by a cost-optimized pool, such as Inf2. Capacity-optimized pools are reserved as a fallback option, stepping in only when the cost-optimized resources are insufficient to meet demand. This approach balances resource efficiency with reliability. Also, managing continuous weight distributions across multiple pools—especially with five or more—introduces unnecessary complexity for minimal performance gains. By grouping pools into two distinct categories, the system achieves better scalability and more predictable behavior, simplifying resource management without sacrificing performance. Finally, a binary step function ensures the system prioritizes the use of cost-optimized pools wherever possible, effectively minimizing operational expenses. Meanwhile, the fallback mechanism guarantees that throughput requirements are met, even during periods of constrained capacity. This approach strikes an optimal balance between cost efficiency and performance reliability. Therefore we simplified the general case to a two-step function that supports **Cost-optimized** deployment (option 1) with lowest $C_{\text{unit}}^{(i)}$ e.g., inf2; and **Capacity-optimized** deployment (option 2) with higher $C_{\text{unit}}^{(i)}$ but with greater availability. 
+The optimized traffic distribution across all deployment units that achieves a smooth transition across pools is: 
 
-This grouping simplifies the optimization function to:
+$$\max_{w_1(t), \dots, w_N(t)} \int_0^{T_{\text{end}}} \left( \sum_{i=1}^{N} T_i(t) - \lambda \sum_{i=1}^{N} w_i(t) \frac{C_i}{L_i} \right) dt$$
+- $\lambda$ is a trade-off parameter balancing throughput and cost optimization.
 
-$$\max_{w_{\text{cost}}(t), w_{\text{cap}}(t)} \int_{0}^{T_{\text{end}}} 
-\left( 
-T_{\text{throughput}}(t) - \lambda C_{\text{total}}(t)
-\right) dt $$
+In practice, most inference requests can be efficiently handled by a cost-optimized pool, like Inf2, while capacity-optimized pools serve as a fallback when demand exceeds the cost-optimized resources. This approach balances efficiency and reliability. Managing continuous weight distributions across multiple pools, especially five or more, adds complexity with minimal performance gains. By categorizing pools into two types, the system enhances scalability, simplifies resource management, and maintains predictable behavior. A binary step function prioritizes cost-optimized pools, minimizing operational costs, while the fallback mechanism ensures throughput during capacity constraints. This simplifies the general case to a two-step function: cost-optimized deployment with the lowest $C(i)$ (e.g., Inf2), and capacity-optimized deployment with higher $C(i)$ but greater availability.
 
-where:
-- $T_{\text{throughput}}(t)=w_{cost}(t)T_{cost}(t)+w_{cap}(t)T_{cap}(t)$
-- $C_{total}(t)=w_{cost}(t)C_{unit}^{(cost)}+w_{cap}(t)C_{unit}^{(cost)}$
-- $w_{cost}(t)+w_{cap}(t)=1$
+This grouping simplifies the weights distribution to **cost-optimized weight** and **capacity-optimized weight** and applied in the optimal traffic distribution transition.
 
 ### Option 1 - Compute cost optimized configuration
-Next, we calculate cost of inference per second for each deployment unit based on the breaking points. 
+The weight for each cost-optimized deployment unit is determined by the cost-to-latency ratio. The more cost-effective a unit is relative to its latency, the higher its weight
+
+$$w_{\text{cost}}(t) = \frac{\frac{C_i}{L_i}}{\sum_{j=1}^{N} \frac{C_j}{L_j}}$$
+
+We calculate cost of inference per second for each deployment unit based on the breaking points. 
 
 | Deployment Unit       | Cost of Compute / Hour     | Throughput | Cost of Inference / Second |
 |-----------------------|----------------------------|------------|----------------------------|
@@ -239,6 +232,10 @@ Figure 6 illustrates the optimal compute allocation based on inference cost. The
 
 
 ### Option 2 - Compute capacity optimized configuration
+The weight for each capacity-optimized deployment unit is based on compute availability. If a deployment unit has available capacity, it receives a share of the traffic in a round-robin manner with the other available units. This weight ensures that traffic is distributed across all available capacity-optimized units, giving equal share to each available unit.
+
+$$w_{\text{cap}}(t) = \frac{A_i(t)}{\sum_{j=1}^{N} A_j(t)}$$
+
 When compute capacity is limited, your inference system must continue serving user requests while minimizing latency and maximizing application availability. To achieve this, we normalized the throughput of deployment units listed in Table 1 and consolidated the Kubernetes services into a single service that uses round-robin to distribute requests across deployment units, allocating resources evenly based on available capacity.
 
 The adjusted throughput per deployment unit aims to approximate uniformity, enabling nearly equal throughput across units as the load balancer distributes requests in a round-robin fashion. However, throughput also factors in both maximum and average latency per unit, allowing faster options like sd21-inf2 and sd21-trn1 to handle a higher volume of requests when possible. We used the deployment unit maximum throughput (Table 1) and observed latency to calculate the target throughput as follow:
