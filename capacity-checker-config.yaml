@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: capacity-checker-config
+data:
+  script.py: |
+    import boto3
+    import time
+    from datetime import datetime, timedelta, timezone
+
+    # Set up CloudWatch Logs client
+    cloudwatch_logs = boto3.client('logs', region_name='us-west-2')  
+
+    # CloudWatch Log Group where Karpenter logs are stored
+    log_group_name = "/aws/containerinsights/kub316/application"  
+
+    print("Checking insufficient capacity events", flush=True)
+
+    def get_nodeclaim_id_for_insufficient_capacity():
+      try:
+        start_time = datetime.now(timezone.utc) - timedelta(minutes=5)
+        end_time = datetime.now(timezone.utc)
+
+        query = r"""
+        fields @timestamp, @message
+        | filter @message like /insufficient capacity/
+        | parse @message /"NodeClaim":\{"name":"(?<NodeClaimID>[^"]+)"/
+        | sort @timestamp desc
+        | limit 1
+        """
+
+        response = cloudwatch_logs.start_query(
+            logGroupName=log_group_name,
+            startTime=int(start_time.timestamp()),
+            endTime=int(end_time.timestamp()),
+            queryString=query
+        )
+
+        query_id = response['queryId']
+        result = None
+        while result is None or result['status'] in ['Running','Scheduled']:
+            print("Waiting for query results...",flush=True)  
+            time.sleep(5)
+            result = cloudwatch_logs.get_query_results(queryId=query_id)
+        #print(f"result:{result}",flush=True)
+        node_claim_id = None
+        if result['results']:
+          for entry in result['results']:
+            #print("Entry:", entry, flush=True)
+            for field in entry:
+              #print("Field:", field, flush=True)
+              if field['field'] == 'NodeClaimID':
+                node_claim_id = field['value']
+                break
+            if node_claim_id:
+              break  
+        else:
+          print("No results found for the query.", flush=True)
+
+        return node_claim_id
+      except Exception as e:
+        print("An error occurred:", str(e), flush=True)
+        return None
+
+    print("Running capacity check...")
+    node_claim_id = get_nodeclaim_id_for_insufficient_capacity()
+    current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')
+    if node_claim_id:
+      with open(node_claim_id, "w") as file:
+        file.write(node_claim_id)
+        file.flush()
+      print(f"{current_time}: Insufficient capacity detected for NodeClaimID: {node_claim_id}", flush=True)
+    else:
+      print("No recent insufficient capacity errors found.", flush=True)

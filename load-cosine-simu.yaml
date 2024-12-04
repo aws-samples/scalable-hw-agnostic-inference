@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-cosine-simu
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-simu
+  template:
+    metadata:
+      labels:
+        app: load-simu
+    spec:
+      serviceAccountName: appsimulator
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: kub316-ng
+      containers:
+        - name: load-simu
+          image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-neuron-assets
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              #!/bin/bash
+
+              DEPLOYMENT_NAME="load"
+              NAMESPACE="load"
+              PERIOD=900             # Longer period for smoother, incremental changes (24 hours)
+              MAGNITUDE=100
+              MIN_REPLICAS=1
+              SLEEP_INTERVAL=20       # minutes
+
+              # Constants
+              TWO_PI=$(echo "scale=10; 2 * 3.14159" | bc)
+              AMPLITUDE=$(echo "scale=10; $MAGNITUDE - $MIN_REPLICAS" | bc)  # Full amplitude range
+
+              # Initialize phase to start at minimum replicas
+              PHASE=$(echo "scale=10; 3.14159" | bc)  # Start at pi for cosine wave minimum
+
+              # Start scaling loop
+              while true; do
+                  COS_WAVE=$(echo "scale=10; c($PHASE)" | bc -l)
+                  
+                  # replicas based on cosine wave
+                  REPLICAS=$(echo "$MIN_REPLICAS + $AMPLITUDE * (1 + $COS_WAVE) / 2" | bc -l)
+                  REPLICAS=$(printf "%.0f" "$REPLICAS")
+
+                  # replicas are within bounds
+                  if [ "$REPLICAS" -lt "$MIN_REPLICAS" ]; then
+                      REPLICAS=$MIN_REPLICAS
+                  elif [ "$REPLICAS" -gt "$MAGNITUDE" ]; then
+                      REPLICAS=$MAGNITUDE
+                  fi
+
+                  echo "Calculated REPLICAS: $REPLICAS"
+
+                  kubectl scale deployment "$DEPLOYMENT_NAME" --replicas="$REPLICAS" -n "$NAMESPACE"
+                  
+                  # increment phase to move through the wave
+                  PHASE=$(echo "$PHASE + $TWO_PI * $SLEEP_INTERVAL / $PERIOD" | bc -l)
+                  
+                  # reset phase every full cycle to maintain precision
+                  if (( $(echo "$PHASE >= $TWO_PI" | bc -l) )); then
+                      PHASE=$(echo "$PHASE - $TWO_PI" | bc -l)
+                  fi
+
+                  sleep "$SLEEP_INTERVAL"m
+              done
