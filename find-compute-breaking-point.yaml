@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: find-accel-breaking-point
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: kub316-ng              
+      serviceAccountName: appsimulator
+      containers:
+      - name: scale-deployments
+        image: bitnami/kubectl:latest  
+        command:
+          - /bin/bash
+          - -c
+          - -x
+          - |
+            # Define the list of deployments to check and the deployment to scale
+            CHECK_DEPLOYMENTS=("sd21-l4-triton" "sd21-a10g-cuda" "sd21-a10g-triton" "sd21-inf2" "sd21-trn1")
+            SCALE_DEPLOYMENT="load"
+            SCALE_NAMESPACE="load"  
+            INITIAL_SCALE=1
+            MAX_REPLICAS=25
+            
+            while true; do
+              # Loop through each deployment in CHECK_DEPLOYMENTS to ensure it has exactly one ready pod
+              for DEPLOYMENT in "${CHECK_DEPLOYMENTS[@]}"; do
+                echo "reset deploy $SCALE_DEPLOYMENT in ns $SCALE_NAMESPACE..."
+                kubectl scale deployment/$SCALE_DEPLOYMENT --replicas=0 -n $SCALE_NAMESPACE
+                echo "Checking readiness of pods in $DEPLOYMENT..."
+                ready_pods=0
+                kubectl scale deployment/$DEPLOYMENT -n default --replicas=1
+                # Wait until exactly one pod is ready in the deployment
+                while true; do
+                    ready_pods=$(kubectl get deployment $DEPLOYMENT -n default -o jsonpath='{.status.readyReplicas}')
+                    if [ "$ready_pods" -eq 1 ]; then
+                        echo "Deployment $DEPLOYMENT has exactly one ready pod."
+                        break
+                    else
+                        echo "Waiting for $DEPLOYMENT to have exactly one ready pod. Current ready pods: $ready_pods"
+                        sleep 10
+                    fi
+                done
+
+                for ((n=INITIAL_SCALE; n<=MAX_REPLICAS; n++)); do
+                  kubectl scale deployment/$SCALE_DEPLOYMENT --replicas=$n -n $SCALE_NAMESPACE
+                  echo "Scaled $SCALE_DEPLOYMENT to $n replicas."
+                  if [ "$n" -lt "$MAX_REPLICAS" ]; then
+                    echo "Waiting for 5 minutes before the next scale increment..."
+                    sleep 300  # 5 min
+                  fi
+                done
+                kubectl scale deployment/$DEPLOYMENT -n default --replicas=0
+              done
+              echo "reset deploy $SCALE_DEPLOYMENT in ns $SCALE_NAMESPACE..."
+              kubectl scale deployment/$SCALE_DEPLOYMENT --replicas=0 -n $SCALE_NAMESPACE
+            done
+  backoffLimit: 0  
+

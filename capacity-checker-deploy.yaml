@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capacity-checker-deploy
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: capacity-checker
+  template:
+    metadata:
+      labels:
+        app: capacity-checker
+    spec:
+      serviceAccountName: appsimulator
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: kub316-ng
+      containers:
+      - name: python-script
+        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/stablediffusion:amd64-neuron-assets
+        imagePullPolicy: Always
+        command:
+          - /bin/bash
+          - -c
+          - |
+            found_capacity_issues=0
+            while true; do
+              python /scripts/script.py
+              insuf_count=$(find / -name "amd-*" -type f 2>/dev/null | wc -l)
+              if [ "$insuf_count" -gt 0 ]; then
+                echo "Found capacity issues: going to optimize for capacity"
+                curl -sL https://raw.githubusercontent.com/aws-samples/scalable-hw-agnostic-inference/master/sd21-equal-routing-ing.yaml | kubectl apply -f -
+                curl -sL https://raw.githubusercontent.com/aws-samples/scalable-hw-agnostic-inference/master/sd21-scaledobject-equal-routing.yaml | kubectl apply -f -
+                rm /amd-*
+                found_capacity_issues=1
+              fi
+              if [ "$found_capacity_issues" -eq 1 ]; then 
+                load_cycle=$(kubectl get deploy -n load load -o jsonpath='{.status.readyReplicas}') 
+                if [ "$load_cycle" -ge 1 ] && [ "$load_cycle" -le 5 ]; then
+                  echo "Started a new cycle so going back to weighted-routing to optimize for cost"
+                  curl -sL https://raw.githubusercontent.com/aws-samples/scalable-hw-agnostic-inference/master/sd21-scaledobject-weighted-routing.yaml | kubectl apply -f -
+                  curl -sL https://raw.githubusercontent.com/aws-samples/scalable-hw-agnostic-inference/master/sd21-weighted-routing-ing.yaml | kubectl apply -f -
+                  found_capacity_issues=0
+                else
+                  echo "In a load cycle; keep looking...."
+                fi
+              fi
+              sleep 300
+            done
+        volumeMounts:
+        - name: script-volume
+          mountPath: /scripts
+      volumes:
+      - name: script-volume
+        configMap:
+          name: capacity-checker-config
