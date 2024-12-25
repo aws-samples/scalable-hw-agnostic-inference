@@ -8,6 +8,7 @@ import neuronx_distributed
 import os
 import gradio as gr
 from fastapi import FastAPI
+from huggingface_hub import login
 
 from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
@@ -16,17 +17,18 @@ from typing import Any, Dict, Optional, Union
 login(hf_token,add_to_git_credential=True)
 
 prompt= "A cat holding a sign that says hello world" 
-height=256
-width=256 
-max_sequence_length=32 
 num_inference_steps=10
-guidance_scale=3.5
 
 model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 pod_name=os.environ['POD_NAME']
+hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
+height=os.environ['HEIGHT']
+width=os.environ['WIDTH']
+max_sequence_length=os.environ['MAX_SEQ_LEN']
+guidance_scale=os.environ['GUIDANCE_SCALE']
 
-COMPILER_WORKDIR_ROOT = "/model/flux-enigma/"
+COMPILER_WORKDIR_ROOT=os.environ['COMPILER_WORKDIR_ROOT']
 
 TEXT_ENCODER_PATH = os.path.join(
     COMPILER_WORKDIR_ROOT,
@@ -196,7 +198,6 @@ def benchmark(n_runs, test_name, model, model_inputs):
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
-        print(model_inputs)
         res = model(**model_inputs)
         image=res.images[0]
         image.save(os.path.join(COMPILER_WORKDIR_ROOT, "flux-dev.png"))
