@@ -2,6 +2,7 @@
 rm -rf cdk.* package* node_modules/
 npm install -g aws-cdk
 npm install aws-cdk-lib
+npm install ts-node typescript 
 . ~/.bash_profile
 cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_REGION
 npm install
