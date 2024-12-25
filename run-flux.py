@@ -241,15 +241,13 @@ class LatencyCollector:
         latency_list = sorted(latency_list)
         return latency_list[pos_ceil] if pos_float - pos_floor > 0.5 else latency_list[pos_floor]
 
-def text2img(model,prompt):
+def text2img(prompt,num_inference_steps):
   start_time = time.time()
-  model_args={'prompt': prompt,'num_inference_steps': num_inference_steps,}
-  image = pipe(**model_args).images[0]
+  model_args={'prompt':prompt,'height':height,'width':width,'max_sequence_length':max_sequence_length,'num_inference_steps': int(num_inference_steps),'guidance_scale':guidance_scale}
+  image = model(**model_args).images[0]
   total_time =  time.time()-start_time
   return image, str(total_time)
 
-def text2img_wrapper(prompt):
-    return text2img(model, prompt)
 
 #if __name__ == '__main__':
 model=load_model(
@@ -272,7 +270,16 @@ def healthy():
 def ready():
   return {"message": pod_name + "is ready"}
 
-io = gr.Interface(fn=text2img_wrapper,inputs=["text"],
-outputs = [gr.Image(height=height, width=width), "text"],
-title = model_id + ' in AWS EC2 ' + device + ' instance; pod name ' + pod_name)
+io = gr.Interface(
+        fn=text2img,
+        inputs=[
+            gr.Textbox(label="Prompt", lines=2, placeholder="Enter your prompt here..."),
+            gr.Textbox(label="Inference-steps", lines=1, placeholder="Enter the number of inference steps; high number takes more time but produces better image")
+            ],
+        outputs = [
+            gr.Image(height=height, width=width), 
+            gr.Textbox(label="Execution Time")
+            ],
+        title=f"{model_id} in AWS EC2 {device} instance; pod name {pod_name}"
+)
 app = gr.mount_gradio_app(app, io, path="/serve")
