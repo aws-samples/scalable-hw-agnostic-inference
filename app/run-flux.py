@@ -25,7 +25,7 @@ hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
 height=int(os.environ['HEIGHT'])
 width=int(os.environ['WIDTH'])
 max_sequence_length=int(os.environ['MAX_SEQ_LEN'])
-guidance_scale=int(os.environ['GUIDANCE_SCALE'])
+guidance_scale=float(os.environ['GUIDANCE_SCALE'])
 
 login(hf_token,add_to_git_credential=True)
 
