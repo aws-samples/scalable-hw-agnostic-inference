@@ -14,7 +14,6 @@ from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from typing import Any, Dict, Optional, Union
 
-login(hf_token,add_to_git_credential=True)
 
 prompt= "A cat holding a sign that says hello world" 
 num_inference_steps=10
@@ -27,6 +26,8 @@ height=os.environ['HEIGHT']
 width=os.environ['WIDTH']
 max_sequence_length=os.environ['MAX_SEQ_LEN']
 guidance_scale=os.environ['GUIDANCE_SCALE']
+
+login(hf_token,add_to_git_credential=True)
 
 COMPILER_WORKDIR_ROOT=os.environ['COMPILER_WORKDIR_ROOT']
 
