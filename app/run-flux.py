@@ -22,10 +22,10 @@ model_id=os.environ['MODEL_ID']
 device=os.environ["DEVICE"]
 pod_name=os.environ['POD_NAME']
 hf_token=os.environ['HUGGINGFACE_TOKEN'].strip()
-height=os.environ['HEIGHT']
-width=os.environ['WIDTH']
-max_sequence_length=os.environ['MAX_SEQ_LEN']
-guidance_scale=os.environ['GUIDANCE_SCALE']
+height=int(os.environ['HEIGHT'])
+width=int(os.environ['WIDTH'])
+max_sequence_length=int(os.environ['MAX_SEQ_LEN'])
+guidance_scale=int(os.environ['GUIDANCE_SCALE'])
 
 login(hf_token,add_to_git_credential=True)
 
