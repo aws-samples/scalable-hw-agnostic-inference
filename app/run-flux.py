@@ -13,6 +13,8 @@ from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from typing import Any, Dict, Optional, Union
 
+login(hf_token,add_to_git_credential=True)
+
 prompt= "A cat holding a sign that says hello world" 
 height=256
 width=256 
