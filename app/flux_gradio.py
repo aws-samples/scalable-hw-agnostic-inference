@@ -4,6 +4,7 @@ from PIL import Image
 import io
 import os
 from fastapi import FastAPI
+import base64
 
 app = FastAPI()
 
@@ -25,9 +26,8 @@ def call_model_api(prompt, num_inference_steps):
         response.raise_for_status()  # Raise an error for bad status codes
         
         data = response.json()
-        
-        # Convert image bytes to PIL Image
-        image = Image.open(io.BytesIO(data['image']))
+        image_bytes = base64.b64decode(data['image']) 
+        image = Image.open(io.BytesIO(image_bytes))
         
         execution_time = data['execution_time']
         

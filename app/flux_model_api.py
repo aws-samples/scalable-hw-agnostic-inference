@@ -20,7 +20,7 @@ class GenerateImageRequest(BaseModel):
     num_inference_steps: int
 
 class GenerateImageResponse(BaseModel):
-    image: bytes  # Image will be sent as bytes
+    image: str = Field(..., description="Base64-encoded image")
     execution_time: float
 
 # Initialize FastAPI app
@@ -215,6 +215,7 @@ def generate_image(request: GenerateImageRequest):
             buf = BytesIO()
             image.save(buf, format='PNG')
             image_bytes = buf.getvalue()
+            image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         total_time = time.time() - start_time
         return GenerateImageResponse(image=image_bytes, execution_time=total_time)
     except Exception as e:
