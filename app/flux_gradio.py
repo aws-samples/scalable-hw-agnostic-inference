@@ -72,8 +72,8 @@ interface = gr.Interface(
         gr.Image(label=f"Image from {model_2}", height=1024, width=576),
         gr.Textbox(label=f"Execution Time ({model_2})"),
     ],
-    layout="vertical",
-    title=f"Image Generation via {model_id} Pipeline",
+    #layout="vertical",
+    #title=f"Image Generation via {model_id} Pipeline",
     description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
 )
 
