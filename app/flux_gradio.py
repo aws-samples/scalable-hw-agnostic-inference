@@ -67,10 +67,10 @@ interface = gr.Interface(
                   info="Enter the number of inference steps; higher number takes more time but produces better image")
     ],
     outputs=[
-        gr.Image(label=f"Image from {model_id_1}", height=256, width=144),
-        gr.Textbox(label=f"Execution Time ({model_id_1})"),
-        gr.Image(label=f"Image from {model_id_2}", height=1024, width=576),
-        gr.Textbox(label=f"Execution Time ({model_id_2})"),
+        gr.Image(label=f"Image from {model_1}", height=256, width=144),
+        gr.Textbox(label=f"Execution Time ({model_1})"),
+        gr.Image(label=f"Image from {model_2}", height=1024, width=576),
+        gr.Textbox(label=f"Execution Time ({model_2})"),
     ],
     layout="vertical",
     title=f"Image Generation via {model_id} Pipeline",
