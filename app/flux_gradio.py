@@ -17,7 +17,7 @@ MODEL_API_URL1 = f"http://{model_api_host1}:{model_api_port1}/generate"
 
 model_2='1024x576'
 model_api_host2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_HOST']
-model_api_port2=os.environ['FLUX_NEURON_1204X576_MODEL_API_SERVICE_PORT']
+model_api_port2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_PORT']
 MODEL_API_URL2 = f"http://{model_api_host2}:{model_api_port2}/generate"
 
 def call_model_api(prompt, num_inference_steps):
