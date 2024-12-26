@@ -22,10 +22,9 @@ MODEL_API_URL2 = f"http://{model_api_host}:{model_api_port}/generate"
 
 def call_model_api(prompt, num_inference_steps):
     results = {}
-       for idx, (model_i, url) in enumerate([
+    for idx, (model_i, url) in enumerate([
          (model_1,MODEL_API_URL1),
-         (model_2,MODEL_API_URL2)
-       ],start=1):
+         (model_2,MODEL_API_URL2)],start=1):
          try:
            payload = {
              "prompt": prompt,
@@ -47,7 +46,7 @@ def call_model_api(prompt, num_inference_steps):
          except Exception as e:
            results[f"image_{idx}"] = None
            results[f"time_{idx}"] = f"Error: {str(e)}"
-       return (
+    return (
          results.get("image_1"),results.get("time_1"),
          results.get("image_2"),results.get("time_2")
        )
