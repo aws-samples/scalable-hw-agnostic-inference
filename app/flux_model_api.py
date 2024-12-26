@@ -7,7 +7,7 @@ import torch_neuronx
 import neuronx_distributed
 import os
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional, Union
 from huggingface_hub import login
 from diffusers import FluxPipeline
