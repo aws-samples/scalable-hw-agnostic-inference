@@ -3,6 +3,7 @@ import requests
 from PIL import Image
 import io
 import os
+from fastapi import FastAPI
 
 app = FastAPI()
 
