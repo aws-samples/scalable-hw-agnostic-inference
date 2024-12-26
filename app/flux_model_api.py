@@ -13,6 +13,7 @@ from huggingface_hub import login
 from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from starlette.responses import StreamingResponse
+import base64
 
 # Define Pydantic models for request and response
 class GenerateImageRequest(BaseModel):
@@ -217,9 +218,9 @@ def generate_image(request: GenerateImageRequest):
             image_bytes = buf.getvalue()
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         total_time = time.time() - start_time
-        return GenerateImageResponse(image=image_bytes, execution_time=total_time)
+        return GenerateImageResponse(image=image_base64, execution_time=total_time)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Image serialization failed: {img_err}")
 
 # Health and readiness endpoints
 @app.get("/health")
