@@ -13,12 +13,12 @@ model_id=os.environ['MODEL_ID']
 model_1='256x144'
 model_api_host1=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_HOST']
 model_api_port1=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_PORT']
-MODEL_API_URL1 = f"http://{model_api_host}:{model_api_port}/generate"
+MODEL_API_URL1 = f"http://{model_api_host1}:{model_api_port1}/generate"
 
 model_2='1024x576'
 model_api_host2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_HOST']
 model_api_port2=os.environ['FLUX_NEURON_1204X576_MODEL_API_SERVICE_PORT']
-MODEL_API_URL2 = f"http://{model_api_host}:{model_api_port}/generate"
+MODEL_API_URL2 = f"http://{model_api_host2}:{model_api_port2}/generate"
 
 def call_model_api(prompt, num_inference_steps):
     results = {}
@@ -31,7 +31,7 @@ def call_model_api(prompt, num_inference_steps):
              "num_inference_steps": int(num_inference_steps)
            }
         
-           response = requests.post(MODEL_API_URL, json=payload)
+           response = requests.post(url, json=payload)
            response.raise_for_status()  # Raise an error for bad status codes
            data = response.json()
            image_bytes = base64.b64decode(data['image']) 
