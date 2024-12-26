@@ -66,8 +66,6 @@ def healthy():
 def ready():
     return {"message": "Service is ready"}
 
-title=gr.Markdown(f"Image Generation via {model_id} Pipeline")
-
 interface = gr.Interface(
     fn=call_model_api,
     inputs=[
@@ -86,4 +84,4 @@ interface = gr.Interface(
     description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
 )
 
-app = gr.mount_gradio_app(app,title + interface, path="/serve")
+app = gr.mount_gradio_app(app,interface, path="/serve")
