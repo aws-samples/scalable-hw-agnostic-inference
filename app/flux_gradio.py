@@ -47,7 +47,7 @@ def healthy():
 def ready():
     return {"message": "Service is ready"}
 
-io = gr.Interface(
+interface = gr.Interface(
     fn=call_model_api,
     inputs=[
         gr.Textbox(label="Prompt", lines=2, placeholder="Enter your prompt here..."),
@@ -62,7 +62,5 @@ io = gr.Interface(
     description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
 )
 
-app = gr.mount_gradio_app(app, io, path="/serve")
+app = gr.mount_gradio_app(app, interface, path="/serve")
 
-if __name__ == "__main__":
-    io.launch()
