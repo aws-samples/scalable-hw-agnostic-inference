@@ -20,11 +20,17 @@ model_api_host2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_HOST']
 model_api_port2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_PORT']
 MODEL_API_URL2 = f"http://{model_api_host2}:{model_api_port2}/generate"
 
+model_3='512x512'
+model_api_host3=os.environ['FLUX_NEURON_512X512_MODEL_API_SERVICE_HOST']
+model_api_port3=os.environ['FLUX_NEURON_512X512_MODEL_API_SERVICE_PORT']
+MODEL_API_URL3 = f"http://{model_api_host3}:{model_api_port3}/generate"
+
 def call_model_api(prompt, num_inference_steps):
     results = {}
     for idx, (model_i, url) in enumerate([
          (model_1,MODEL_API_URL1),
-         (model_2,MODEL_API_URL2)],start=1):
+         (model_2,MODEL_API_URL2),
+         (model_3,MODEL_API_URL3)],start=1):
          try:
            payload = {
              "prompt": prompt,
@@ -48,7 +54,8 @@ def call_model_api(prompt, num_inference_steps):
            results[f"time_{idx}"] = f"Error: {str(e)}"
     return (
          results.get("image_1"),results.get("time_1"),
-         results.get("image_2"),results.get("time_2")
+         results.get("image_2"),results.get("time_2"),
+         results.get("image_3"),results.get("time_3")
        )
 
 @app.get("/health")
@@ -58,6 +65,8 @@ def healthy():
 @app.get("/readiness")
 def ready():
     return {"message": "Service is ready"}
+
+title=gr.Markdown(f"Image Generation via {model_id} Pipeline")
 
 interface = gr.Interface(
     fn=call_model_api,
@@ -71,11 +80,10 @@ interface = gr.Interface(
         gr.Textbox(label=f"Execution Time ({model_1})"),
         gr.Image(label=f"Image from {model_2}", height=1024, width=576),
         gr.Textbox(label=f"Execution Time ({model_2})"),
+        gr.Image(label=f"Image from {model_3}", height=512, width=512),
+        gr.Textbox(label=f"Execution Time ({model_3})"),
     ],
-    #layout="vertical",
-    #title=f"Image Generation via {model_id} Pipeline",
     description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
 )
 
-app = gr.mount_gradio_app(app, interface, path="/serve")
-
+app = gr.mount_gradio_app(app,title + interface, path="/serve")
