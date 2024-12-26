@@ -4,6 +4,8 @@ from PIL import Image
 import io
 import os
 
+app = FastAPI()
+
 model_id=os.environ['MODEL_ID']
 model_api_host=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_HOST']
 model_api_port=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_PORT']
@@ -36,6 +38,14 @@ def call_model_api(prompt, num_inference_steps):
         # Handle other errors
         return None, f"Error: {str(e)}"
 
+@app.get("/health")
+def healthy():
+    return {"message": "Service is healthy"}
+
+@app.get("/readiness")
+def ready():
+    return {"message": "Service is ready"}
+
 io = gr.Interface(
     fn=call_model_api,
     inputs=[
@@ -51,5 +61,7 @@ io = gr.Interface(
     description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
 )
 
-if __name__ == '__main__':
+app = gr.mount_gradio_app(app, io, path="/serve")
+
+if __name__ == "__main__":
     io.launch()
