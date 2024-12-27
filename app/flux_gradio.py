@@ -82,6 +82,44 @@ def healthy():
 def ready():
     return {"message": "Service is ready"}
 
+with gr.Blocks() as interface:
+    gr.Markdown(f"# {model_id} Image Generation App")
+    gr.Markdown("Enter a prompt and specify the number of inference steps to generate images using different models.")
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            prompt = gr.Textbox(label="Prompt", lines=1, placeholder="Enter your prompt here...")
+            inference_steps = gr.Number(
+                label="Inference Steps", 
+                value=10, 
+                precision=0, 
+                info="Enter the number of inference steps; higher number takes more time but produces better image"
+            )
+            generate_button = gr.Button("Generate Images")
+        
+        with gr.Column(scale=2):
+            # grid for images and their execution times
+            with gr.Row():
+                for idx, model in enumerate(models):
+                    with gr.Column(scale=1):
+                        img = gr.Image(label=f"Image from {model['name']}", height=model['height'], width=model['width'])
+                        exec_time = gr.Textbox(label=f"Execution Time ({model['name']})")
+                        # Assign unique IDs 
+                        setattr(interface, f"image_{idx+1}", img)
+                        setattr(interface, f"time_{idx+1}", exec_time)
+
+    # callback for the button
+    generate_button.click(
+        fn=call_model_api,
+        inputs=[prompt, inference_steps],
+        outputs=[
+            interface.get_component(f"image_{i+1}") for i in range(len(models))
+        ] + [
+            interface.get_component(f"time_{i+1}") for i in range(len(models))
+        ]
+    )
+app = gr.mount_gradio_app(app, interface, path="/serve")
+'''
 interface = gr.Interface(
     fn=call_model_api,
     inputs=[
@@ -103,5 +141,5 @@ interface = gr.Interface(
     ],
     description="Enter a prompt and specify the number of inference steps to generate images using the model pipeline."
 )
-
 app = gr.mount_gradio_app(app,interface, path="/serve")
+'''
