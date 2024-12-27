@@ -5,58 +5,74 @@ import io
 import os
 from fastapi import FastAPI
 import base64
+import asyncio
+import httpx
 
 app = FastAPI()
 
 model_id=os.environ['MODEL_ID']
 
-model_1='256x144'
-model_api_host1=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_HOST']
-model_api_port1=os.environ['FLUX_NEURON_256X144_MODEL_API_SERVICE_PORT']
-MODEL_API_URL1 = f"http://{model_api_host1}:{model_api_port1}/generate"
+models = [
+    {
+        'name': '256x144',
+        'host_env': 'FLUX_NEURON_256X144_MODEL_API_SERVICE_HOST',
+        'port_env': 'FLUX_NEURON_256X144_MODEL_API_SERVICE_PORT',
+        'height': 256,
+        'width': 144
+    },
+    {
+        'name': '1024x576',
+        'host_env': 'FLUX_NEURON_1024X576_MODEL_API_SERVICE_HOST',
+        'port_env': 'FLUX_NEURON_1024X576_MODEL_API_SERVICE_PORT',
+        'height': 1024,
+        'width': 576
+    },
+    {
+        'name': '512x512',
+        'host_env': 'FLUX_NEURON_512X512_MODEL_API_SERVICE_HOST',
+        'port_env': 'FLUX_NEURON_512X512_MODEL_API_SERVICE_PORT',
+        'height': 512,
+        'width': 512
+    }
+]
 
-model_2='1024x576'
-model_api_host2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_HOST']
-model_api_port2=os.environ['FLUX_NEURON_1024X576_MODEL_API_SERVICE_PORT']
-MODEL_API_URL2 = f"http://{model_api_host2}:{model_api_port2}/generate"
+for model in models:
+    host = os.environ[model['host_env']]
+    port = os.environ[model['port_env']]
+    model['url'] = f"http://{host}:{port}/generate"
 
-model_3='512x512'
-model_api_host3=os.environ['FLUX_NEURON_512X512_MODEL_API_SERVICE_HOST']
-model_api_port3=os.environ['FLUX_NEURON_512X512_MODEL_API_SERVICE_PORT']
-MODEL_API_URL3 = f"http://{model_api_host3}:{model_api_port3}/generate"
+async def fetch_image(client, url, prompt, num_inference_steps):
+    payload = {
+        "prompt": prompt,
+        "num_inference_steps": int(num_inference_steps)
+    }
+    try:
+        response = await client.post(url, json=payload, timeout=60.0)
+        response.raise_for_status()
+        data = response.json()
+        image_bytes = base64.b64decode(data['image']) 
+        image = Image.open(io.BytesIO(image_bytes))
+        execution_time = data.get('execution_time', 0)
+        return image, f"{execution_time:.2f} seconds"
+    except httpx.RequestError as e:
+        return None, f"Request Error: {str(e)}"
+    except Exception as e:
+        return None, f"Error: {str(e)}"
 
-def call_model_api(prompt, num_inference_steps):
-    results = {}
-    for idx, (model_i, url) in enumerate([
-         (model_1,MODEL_API_URL1),
-         (model_2,MODEL_API_URL2),
-         (model_3,MODEL_API_URL3)],start=1):
-         try:
-           payload = {
-             "prompt": prompt,
-             "num_inference_steps": int(num_inference_steps)
-           }
-        
-           response = requests.post(url, json=payload)
-           response.raise_for_status()  # Raise an error for bad status codes
-           data = response.json()
-           image_bytes = base64.b64decode(data['image']) 
-           image = Image.open(io.BytesIO(image_bytes))
-        
-           execution_time = data['execution_time']
-           results[f"image_{idx}"] = image
-           results[f"time_{idx}"] = f"{execution_time:.2f} seconds" 
-         except requests.exceptions.RequestException as e:
-           results[f"image_{idx}"] = None
-           results[f"time_{idx}"] = f"Request Error: {str(e)}"
-         except Exception as e:
-           results[f"image_{idx}"] = None
-           results[f"time_{idx}"] = f"Error: {str(e)}"
-    return (
-         results.get("image_1"),results.get("time_1"),
-         results.get("image_2"),results.get("time_2"),
-         results.get("image_3"),results.get("time_3")
-       )
+async def call_model_api(prompt, num_inference_steps):
+    async with httpx.AsyncClient() as client:
+        tasks = [
+            fetch_image(client, model['url'], prompt, num_inference_steps)
+            for model in models
+        ]
+        results = await asyncio.gather(*tasks)
+
+    outputs = []
+    for idx, (image, exec_time) in enumerate(results):
+        model = models[idx]
+        outputs.append(image)
+        outputs.append(exec_time)
+    return tuple(outputs)
 
 @app.get("/health")
 def healthy():
@@ -70,18 +86,22 @@ interface = gr.Interface(
     fn=call_model_api,
     inputs=[
         gr.Textbox(label="Prompt", lines=1, placeholder="Enter your prompt here..."),
-        gr.Number(label="Inference Steps", value=10, precision=0, 
-                  info="Enter the number of inference steps; higher number takes more time but produces better image")
+        gr.Number(
+            label="Inference Steps", 
+            value=10, 
+            precision=0, 
+            info="Enter the number of inference steps; higher number takes more time but produces better image"
+        )
     ],
     outputs=[
-        gr.Image(label=f"Image from {model_1}", height=256, width=144),
-        gr.Textbox(label=f"Execution Time ({model_1})"),
-        gr.Image(label=f"Image from {model_2}", height=1024, width=576),
-        gr.Textbox(label=f"Execution Time ({model_2})"),
-        gr.Image(label=f"Image from {model_3}", height=512, width=512),
-        gr.Textbox(label=f"Execution Time ({model_3})"),
+        gr.Image(label=f"Image from {models[0]['name']}", height=models[0]['height'], width=models[0]['width']),
+        gr.Textbox(label=f"Execution Time ({models[0]['name']})"),
+        gr.Image(label=f"Image from {models[1]['name']}", height=models[1]['height'], width=models[1]['width']),
+        gr.Textbox(label=f"Execution Time ({models[1]['name']})"),
+        gr.Image(label=f"Image from {models[2]['name']}", height=models[2]['height'], width=models[2]['width']),
+        gr.Textbox(label=f"Execution Time ({models[2]['name']})"),
     ],
-    description="Enter a prompt and specify the number of inference steps to generate an image using the model pipeline."
+    description="Enter a prompt and specify the number of inference steps to generate images using the model pipeline."
 )
 
 app = gr.mount_gradio_app(app,interface, path="/serve")
