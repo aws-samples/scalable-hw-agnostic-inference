@@ -1,4 +1,5 @@
 import math
+import boto3
 import time
 import argparse
 import torch
@@ -15,19 +16,15 @@ from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from starlette.responses import StreamingResponse
 import base64
 
-# Define Pydantic models for request and response
-class GenerateImageRequest(BaseModel):
-    prompt: str
-    num_inference_steps: int
-
-class GenerateImageResponse(BaseModel):
-    image: str = Field(..., description="Base64-encoded image")
-    execution_time: float
+cw_namespace='hw-agnostic-infer'
+cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
 
 # Initialize FastAPI app
 app = FastAPI()
 
 # Environment Variables
+app_name=os.environ['APP']
+nodepool=os.environ['NODEPOOL']
 model_id = os.environ['MODEL_ID']
 device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
@@ -37,6 +34,22 @@ width = int(os.environ['WIDTH'])
 max_sequence_length = int(os.environ['MAX_SEQ_LEN'])
 guidance_scale = float(os.environ['GUIDANCE_SCALE'])
 COMPILER_WORKDIR_ROOT = os.environ['COMPILER_WORKDIR_ROOT']
+
+DTYPE = DTYPE
+
+def cw_pub_metric(metric_name,metric_value,metric_unit):
+  response = cloudwatch.put_metric_data(
+    Namespace=cw_namespace,
+    MetricData=[
+      {
+        'MetricName':metric_name,
+        'Value':metric_value,
+        'Unit':metric_unit,
+       },
+    ]
+  )
+  print(f"in pub_deployment_counter - response:{response}")
+  return response
 
 # Model Paths
 TEXT_ENCODER_PATH = os.path.join(
@@ -64,6 +77,14 @@ TRANSFORMER_BLOCKS_DIR = os.path.join(
 
 # Login to Hugging Face
 login(hf_token, add_to_git_credential=True)
+
+class GenerateImageRequest(BaseModel):
+    prompt: str
+    num_inference_steps: int
+
+class GenerateImageResponse(BaseModel):
+    image: str = Field(..., description="Base64-encoded image")
+    execution_time: float
 
 class NeuronFluxTransformer2DModel(nn.Module):
     def __init__(
@@ -117,7 +138,7 @@ class NeuronFluxTransformer2DModel(nn.Module):
 
         encoder_hidden_states = self.context_embedder(encoder_hidden_states)
 
-        image_rotary_emb = image_rotary_emb.type(torch.bfloat16)
+        image_rotary_emb = image_rotary_emb.type(DTYPE)
 
         encoder_hidden_states, hidden_states = self.transformer_blocks_model(
             hidden_states,
@@ -135,7 +156,7 @@ class NeuronFluxTransformer2DModel(nn.Module):
             image_rotary_emb
         )
 
-        hidden_states = hidden_states.to(torch.bfloat16)
+        hidden_states = hidden_states.to(DTYPE)
 
         return self.out_layers_model(
             hidden_states,
@@ -176,7 +197,7 @@ class NeuronFluxT5TextEncoderModel(nn.Module):
 def load_model():
     pipe = FluxPipeline.from_pretrained(
         "black-forest-labs/FLUX.1-dev",
-        torch_dtype=torch.bfloat16)
+        torch_dtype=DTYPE)
     with torch_neuronx.experimental.neuron_cores_context(start_nc=0):
         pipe.text_encoder = NeuronFluxCLIPTextEncoderModel(
             pipe.text_encoder.dtype,
@@ -218,6 +239,12 @@ def generate_image(request: GenerateImageRequest):
             image_bytes = buf.getvalue()
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
         total_time = time.time() - start_time
+        counter_metric=app_name+'-counter'
+        cw_pub_metric(counter_metric,1,'Count')
+        counter_metric=nodepool
+        cw_pub_metric(counter_metric,1,'Count')
+        latency_metric=app_name+'-latency'
+        cw_pub_metric(latency_metric,total_time,'Seconds')
         return GenerateImageResponse(image=image_base64, execution_time=total_time)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Image serialization failed: {img_err}")
