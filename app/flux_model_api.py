@@ -35,7 +35,7 @@ max_sequence_length = int(os.environ['MAX_SEQ_LEN'])
 guidance_scale = float(os.environ['GUIDANCE_SCALE'])
 COMPILER_WORKDIR_ROOT = os.environ['COMPILER_WORKDIR_ROOT']
 
-DTYPE = DTYPE
+DTYPE=torch.bfloat16
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
