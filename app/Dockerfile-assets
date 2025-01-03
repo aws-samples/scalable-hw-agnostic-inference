@@ -15,6 +15,5 @@ RUN pip install boto3
 RUN mkdir /root/.aws
 ADD config /root/.aws
 
-#FROM ${image}-assets AS assets
 ADD call-model.sh /call-model.sh
 ADD appsimulator.sh /appsimulator.sh

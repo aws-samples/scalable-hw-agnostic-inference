@@ -8,6 +8,8 @@ RUN python -m pip install gradio
 RUN python -m pip install "uvicorn[standard]"
 RUN python -m pip install fastapi
 RUN python -m pip install matplotlib Pillow
+RUN pip install diffusers==0.30.3 sentencepiece
+RUN pip install httpx
 
 RUN apt-get update
 RUN mkdir -p /etc/apt/keyrings/
