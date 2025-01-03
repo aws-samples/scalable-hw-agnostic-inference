@@ -155,7 +155,17 @@ spec:
         awsRegion: us-west-2
 ```
 ### Capacity dynamics
-Our solution distributes traffic across multiple deployment units $D_i$ based on available capacity $A_i$ (1 when available and 0 if unavailable), cost, $C_i$ and latency, $L_i$. The assigned weight $w_i$ is based on throughput, $T_i$, of $D_i$ when at maximum capacity. Cost per inference, $C_i$, and Latency of inference, $L_i$:
+Our solution distributes traffic across multiple deployment units $D_i$ based on available capacity $A_i$ (1 when available and 0 if unavailable), cost, $C_i$ and latency, $L_i$. 
+Let $D$ be the set of all potential deployment unit, $(model,hardware,framework)$, and $D_i \in D$ represents a deployment unit in the set. We define an optimal deployment unit $D^*$ as a deployment unit $D_i$ that satisfies the following conditions:
+
+$$D^* = D_i \in D \text{ if, for all } i, j \in \{1, 2, \ldots, |D|\}, \quad L_i \leq L_j \quad \text{and} \quad T_i \geq T_j$$
+
+where:
+- $L_i$ is the latency associated with deployment unit $D_i$,
+- $T_i$ is the throughput associated with deployment unit $D_i$.
+
+
+The assigned weight $w_i$ is based on maximum throughput, $T_i$, of $D_i$ (see Figure 4). Cost per inference, $C_i$, and Latency of inference, $L_i$:
 
 $$w_i(t) = \frac{\frac{T_j(t)}{C_i L_i} A_i(t)}{\sum_{j=1}^{N} \frac{T_j(t)}{C_j L_j} A_{j}(t)}$$
 
