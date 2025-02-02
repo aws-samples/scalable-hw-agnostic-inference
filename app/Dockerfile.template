@@ -2,14 +2,28 @@ FROM $BASE_IMAGE as base
 
 RUN apt-get update --fix-missing
 RUN apt-get install -y apt-transport-https ca-certificates curl gpg net-tools gettext-base python3-venv g++
+RUN pip install --upgrade pip
 RUN python -m pip install wget
 RUN python -m pip install awscli
 RUN python -m pip install gradio
 RUN python -m pip install "uvicorn[standard]"
 RUN python -m pip install fastapi
 RUN python -m pip install matplotlib Pillow
-RUN pip install diffusers==0.30.3 sentencepiece
 RUN pip install httpx
+
+RUN pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com && \
+    pip install --upgrade \
+        optimum[neuronx] \
+        optimum-neuron \
+        neuronx-cc \
+        transformers_neuronx \
+        neuronx_distributed \
+        transformers \
+        torch-neuronx \
+        accelerate \
+        diffusers \
+        triton \
+        protobuf 
 
 RUN apt-get update
 RUN mkdir -p /etc/apt/keyrings/
