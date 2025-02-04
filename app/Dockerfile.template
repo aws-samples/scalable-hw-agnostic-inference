@@ -22,7 +22,6 @@ RUN pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com
         torch-neuronx \
         accelerate \
         diffusers \
-        triton \
         protobuf 
 
 RUN apt-get update
