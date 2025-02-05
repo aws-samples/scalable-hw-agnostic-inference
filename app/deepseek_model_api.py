@@ -24,8 +24,6 @@ compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-height = int(os.environ['HEIGHT'])
-width = int(os.environ['WIDTH'])
 max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
 from transformers import AutoTokenizer
