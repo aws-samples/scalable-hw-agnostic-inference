@@ -149,7 +149,7 @@ def load_model():
 
 model = load_model()
 prompt= "What model are you?"
-benchmark(10,"warmup",model,prompt):
+benchmark(10,"warmup",model,prompt)
 app = FastAPI()
 
 @app.post("/generate", response_model=GenerateResponse)
