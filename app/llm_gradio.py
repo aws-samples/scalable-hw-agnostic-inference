@@ -20,7 +20,7 @@ models = [
     },
     {
         'name': 'Deepseek70B',
-        'host_env': 'DS_R1_70B_SERVICE_HOST'
+        'host_env': 'DS_R1_70B_SERVICE_HOST',
         'port_env': 'DS_R1_70B_SERVICE_PORT'
     }
 ]
