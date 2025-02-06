@@ -1,3 +1,4 @@
+import traceback
 import math
 import boto3
 import time
@@ -155,7 +156,7 @@ def generate_text_post(request: GenerateRequest):
   start_time = time.time()
   try:
       with torch.no_grad():
-        response=gentext(item.prompt)
+        response=gentext(request.prompt)
       total_time = time.time() - start_time
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
@@ -165,6 +166,7 @@ def generate_text_post(request: GenerateRequest):
       cw_pub_metric(latency_metric,total_time,'Seconds')
       return GenerateResponse(text=text_base64, execution_time=total_time)
   except Exception as e:
+      traceback.print_exc()
       raise HTTPException(status_code=500, detail=f"text serialization failed: {e}")
 
 # Health and readiness endpoints
