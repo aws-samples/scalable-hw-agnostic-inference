@@ -38,10 +38,10 @@ async def fetch_text(client, url, prompt):
         response = await client.post(url, json=payload, timeout=60.0)
         response.raise_for_status()
         data = response.json()
-        response_bytes = base64.b64decode(data['image']) 
+        response_bytes = base64.b64decode(data['text']) 
         response_text = io.BytesIO(response_bytes)
         execution_time = data.get('execution_time', 0)
-        return image, f"{execution_time:.2f} seconds"
+        return response_text, f"{execution_time:.2f} seconds"
     except httpx.RequestError as e:
         return None, f"Request Error: {str(e)}"
     except Exception as e:
@@ -57,7 +57,7 @@ async def call_model_api(prompt):
     texts = []
     exec_times = []
     for text,exec_time in results:
-      images.append(text)
+      texts.append(text)
       exec_times.append(exec_time)
     return texts + exec_times
 
