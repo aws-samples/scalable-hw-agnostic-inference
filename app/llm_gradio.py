@@ -50,7 +50,7 @@ async def fetch_text(client, url, prompt):
 async def call_model_api(prompt):
     async with httpx.AsyncClient() as client:
         tasks = [
-            fetch_image(client, model['url'], prompt)
+            fetch_text(client, model['url'], prompt)
             for model in models
         ]
         results = await asyncio.gather(*tasks)
