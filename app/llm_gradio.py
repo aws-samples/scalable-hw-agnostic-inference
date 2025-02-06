@@ -7,6 +7,7 @@ from fastapi import FastAPI
 import base64
 import asyncio
 import httpx
+import traceback
 
 app = FastAPI()
 
@@ -43,8 +44,10 @@ async def fetch_text(client, url, prompt):
         execution_time = data.get('execution_time', 0)
         return response_text, f"{execution_time:.2f} seconds"
     except httpx.RequestError as e:
+        traceback.print_exc()
         return None, f"Request Error: {str(e)}"
     except Exception as e:
+        traceback.print_exc()
         return None, f"Error: {str(e)}"
 
 async def call_model_api(prompt):
