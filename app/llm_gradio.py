@@ -39,8 +39,7 @@ async def fetch_text(client, url, prompt):
         response = await client.post(url, json=payload, timeout=60.0)
         response.raise_for_status()
         data = response.json()
-        response_bytes = base64.b64decode(data['text']) 
-        response_text = base64.b64decode(response_bytes).decode()
+        response_text = base64.b64decode(data['text']).decode('utf-8')
         execution_time = data.get('execution_time', 0)
         return response_text, f"{execution_time:.2f} seconds"
     except httpx.RequestError as e:
