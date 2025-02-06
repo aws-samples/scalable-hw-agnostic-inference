@@ -53,7 +53,7 @@ def gentext(prompt):
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
   total_time =  time.time()-start_time
-  return str(response), str(total_time)
+  return str(response), float(total_time)
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
@@ -153,17 +153,16 @@ app = FastAPI()
 
 @app.post("/generate", response_model=GenerateResponse)
 def generate_text_post(request: GenerateRequest):
-  start_time = time.time()
   try:
       with torch.no_grad():
-        response=gentext(request.prompt)
-      total_time = time.time() - start_time
+        response_text,total_time=gentext(request.prompt)
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
       counter_metric=nodepool
       cw_pub_metric(counter_metric,1,'Count')
       latency_metric=app_name+'-latency'
       cw_pub_metric(latency_metric,total_time,'Seconds')
+      text_base64 = base64.b64encode(response_text.encode()).decode()
       return GenerateResponse(text=text_base64, execution_time=total_time)
   except Exception as e:
       traceback.print_exc()
