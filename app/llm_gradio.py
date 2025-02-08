@@ -77,7 +77,7 @@ with gr.Blocks() as interface:
 
     with gr.Row():
         with gr.Column(scale=1):
-            prompt = gr.Textbox(label="Prompt", lines=1, placeholder="Enter your prompt here...",elem_id="prompt-box")
+            prompt = gr.Textbox(label="Prompt", lines=10, placeholder="Enter your prompt here...",elem_id="prompt-box")
             generate_button = gr.Button("Generate Text",variant="primary")
         
         with gr.Column(scale=2):
