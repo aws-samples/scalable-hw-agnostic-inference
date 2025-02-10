@@ -77,7 +77,7 @@ with gr.Blocks() as interface:
 
     with gr.Row():
         with gr.Column(scale=1):
-            prompt = gr.Textbox(label="Prompt", lines=10, placeholder="Enter your prompt here...",elem_id="prompt-box")
+            prompt = gr.Textbox(label="Prompt", lines=100, placeholder="Enter your prompt here...",elem_id="prompt-box")
             generate_button = gr.Button("Generate Text",variant="primary")
         
         with gr.Column(scale=2):
@@ -88,7 +88,7 @@ with gr.Blocks() as interface:
               for idx, model in enumerate(models):
                  with gr.Column(scale=1,min_width=300):
                      text = gr.Textbox(label=f"Text from {model['name']}",interactive=False)
-                     exec_time = gr.Textbox(label=f"Execution Time ({model['name']})",interactive=False,lines=1,placeholder="Execution time will appear here...")
+                     exec_time = gr.Textbox(label=f"Execution Time ({model['name']})",interactive=False,lines=100,placeholder="Execution time will appear here...")
                      text_components.append(text)
                      exec_time_components.append(exec_time)
 
