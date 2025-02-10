@@ -25,7 +25,7 @@ compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
+#max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
 from transformers import AutoTokenizer
 
@@ -41,7 +41,7 @@ elif device=='cuda':
 elif device == 'cpu':
   from transformers import AutoModelForCausalLM
 
-def gentext(prompt):
+def gentext(prompt,max_new_tokens):
   start_time = time.time()
   if device=='xla':
     inputs = tokenizer(prompt, return_tensors="pt")
@@ -131,11 +131,21 @@ class LatencyCollector:
         return latency_list[pos_ceil] if pos_float - pos_floor > 0.5 else latency_list[pos_floor]
 
 class GenerateRequest(BaseModel):
+    max_new_tokens: int
     prompt: str
+
+class GenerateBenchmarkRequest(BaseModel):
+    n_runs: int
+    max_new_tokens: int
+    prompt: str
+    test_name: str = " benchmark:"+model_id+" on "+device
 
 class GenerateResponse(BaseModel):
     text: str = Field(..., description="Base64-encoded text")
     execution_time: float
+
+class GenerateBenchmarkResponse(BaseModel):
+    report: str = Field(..., description="Benchmark report")
 
 def load_model():
   if device=='xla':
@@ -151,11 +161,22 @@ prompt= "What model are you?"
 benchmark(10,"warmup",model,prompt)
 app = FastAPI()
 
+@app.post("/benchmark",response_model=GenerateBenchmarkResponse) 
+def generate_benchmark_report(request: GenerateBenchmarkRequest):
+  try:
+      with torch.no_grad():
+        response_report=benchmark(request.n_runs,request.max_new_tokens,request.prompt,request.test_name)
+        report_base64 = base64.b64encode(response_report.encode()).decode()
+      return GenerateBenchmarkResponse(report=report_base64)
+  except Exception as e:
+      traceback.print_exc()
+      raise HTTPException(status_code=500, detail=f"{e}")
+
 @app.post("/generate", response_model=GenerateResponse)
 def generate_text_post(request: GenerateRequest):
   try:
       with torch.no_grad():
-        response_text,total_time=gentext(request.prompt)
+        response_text,total_time=gentext(request.prompt,request.max_new_tokens)
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
       counter_metric=nodepool
