@@ -37,7 +37,7 @@ async def fetch_text(client, url, prompt):
         "prompt": prompt
     }
     try:
-        response = await client.post(endpoiint, json=payload, timeout=60.0)
+        response = await client.post(endpoint, json=payload, timeout=60.0)
         response.raise_for_status()
         data = response.json()
         response_text = base64.b64decode(data['text']).decode('utf-8')
