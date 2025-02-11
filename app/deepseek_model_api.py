@@ -25,7 +25,7 @@ compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-#max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
+default_max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
 from transformers import AutoTokenizer
 
@@ -73,7 +73,7 @@ def cw_pub_metric(metric_name,metric_value,metric_unit):
 login(hf_token, add_to_git_credential=True)
 
 # TBD change to text from image
-def benchmark(n_runs, test_name,model,prompt):
+def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
     if device=='xla':
       inputs = tokenizer(prompt, return_tensors="pt")
     elif device=='cuda':
@@ -138,7 +138,7 @@ class GenerateBenchmarkRequest(BaseModel):
     n_runs: int
     max_new_tokens: int
     prompt: str
-    test_name: str = " benchmark:"+model_id+" on "+device
+    test_name: str = " benchmark:"+model_id+" on "+device+" with max_new_tokens:"+max_new_tokens
 
 class GenerateResponse(BaseModel):
     text: str = Field(..., description="Base64-encoded text")
@@ -158,7 +158,7 @@ def load_model():
 
 model = load_model()
 prompt= "What model are you?"
-benchmark(10,"warmup",model,prompt)
+benchmark(10,"warmup",model,prompt,default_max_new_tokens)
 app = FastAPI()
 
 @app.post("/benchmark",response_model=GenerateBenchmarkResponse) 

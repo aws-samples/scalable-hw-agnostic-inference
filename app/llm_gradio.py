@@ -29,7 +29,7 @@ models = [
 for model in models:
     host = os.environ[model['host_env']]
     port = os.environ[model['port_env']]
-    model['url'] = f"http://{host}:{port}/generate"
+    model['url'] = f"http://{host}:{port}"
 
 async def fetch_text(client, url, prompt):
     endpoint = f"{url}/generate"
