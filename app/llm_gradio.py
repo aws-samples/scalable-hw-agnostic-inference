@@ -63,8 +63,7 @@ async def fetch_benchmark(client, url, prompt, n_runs=1, max_new_tokens=32):
         response.raise_for_status()
         data = response.json()
 
-        # For illustration, assume we still have base64-encoded results
-        response_text = base64.b64decode(data['results']).decode('utf-8')
+        response_text = base64.b64decode(data['report']).decode('utf-8')
         execution_time = data.get('execution_time', 0)
 
         return response_text, f"{execution_time:.2f} seconds"
