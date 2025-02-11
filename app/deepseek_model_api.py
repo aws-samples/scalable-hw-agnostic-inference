@@ -138,7 +138,6 @@ class GenerateBenchmarkRequest(BaseModel):
     n_runs: int
     max_new_tokens: int
     prompt: str
-    test_name: str 
 
 class GenerateResponse(BaseModel):
     text: str = Field(..., description="Base64-encoded text")
