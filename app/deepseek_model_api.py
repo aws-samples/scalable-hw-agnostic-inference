@@ -162,10 +162,11 @@ app = FastAPI()
 
 @app.post("/benchmark",response_model=GenerateBenchmarkResponse) 
 def generate_benchmark_report(request: GenerateBenchmarkRequest):
+  print(f'DEBUG: GenerateBenchmarkRequest:{request}")
   try:
       with torch.no_grad():
         test_name=f'benchmark:{model_id} on {device} with {request.max_new_tokens} output tokens'
-        response_report=benchmark(request.n_runs,request.max_new_tokens,request.prompt,test_name)
+        response_report=benchmark(request.n_runs,test_name,model,request.prompt,request.max_new_tokens)
         report_base64 = base64.b64encode(response_report.encode()).decode()
       return GenerateBenchmarkResponse(report=report_base64)
   except Exception as e:
