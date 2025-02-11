@@ -31,10 +31,11 @@ for model in models:
     port = os.environ[model['port_env']]
     model['url'] = f"http://{host}:{port}"
 
-async def fetch_text(client, url, prompt):
+async def fetch_text(client,url,prompt,max_new_tokens=32):
     endpoint = f"{url}/generate"
     payload = {
-        "prompt": prompt
+        "prompt": prompt,
+        "max_new_tokens": max_new_tokens
     }
     try:
         response = await client.post(endpoint, json=payload, timeout=60.0)
@@ -78,7 +79,7 @@ async def call_model_api(prompt,task_type,n_runs,max_new_tokens):
     async with httpx.AsyncClient() as client:
       if task_type == "fetch_text":
         tasks = [
-            fetch_text(client, model['url'], prompt)
+            fetch_text(client, model['url'], prompt,max_new_tokens)
             for model in models
         ]
       else: 
