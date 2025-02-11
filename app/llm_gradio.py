@@ -109,7 +109,7 @@ with gr.Blocks() as interface:
     with gr.Row():
         with gr.Column(scale=1):
             prompt = gr.Textbox(label="Prompt", lines=10, placeholder="Enter your prompt here...",elem_id="prompt-box")
-            generate_button = gr.Button("Generate Text",variant="primary")
+            #generate_button = gr.Button("Generate Text",variant="primary")
             task_type = gr.Dropdown(label="Task Type",choices=["fetch_text", "fetch_benchmark"],value="fetch_text",interactive=True)
             n_runs_box = gr.Number(label="Number of Runs (Benchmark)",value=1)
             max_new_tokens_box = gr.Number(label="Max New Tokens (Benchmark)",value=32)

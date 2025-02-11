@@ -138,7 +138,7 @@ class GenerateBenchmarkRequest(BaseModel):
     n_runs: int
     max_new_tokens: int
     prompt: str
-    test_name: str = " benchmark:"+model_id+" on "+device+" with max_new_tokens:"+max_new_tokens
+    test_name: str 
 
 class GenerateResponse(BaseModel):
     text: str = Field(..., description="Base64-encoded text")
@@ -165,7 +165,8 @@ app = FastAPI()
 def generate_benchmark_report(request: GenerateBenchmarkRequest):
   try:
       with torch.no_grad():
-        response_report=benchmark(request.n_runs,request.max_new_tokens,request.prompt,request.test_name)
+        test_name=f'benchmark:{model_id} on {device} with {request.max_new_tokens} output tokens'
+        response_report=benchmark(request.n_runs,request.max_new_tokens,request.prompt,test_name)
         report_base64 = base64.b64encode(response_report.encode()).decode()
       return GenerateBenchmarkResponse(report=report_base64)
   except Exception as e:
