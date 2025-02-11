@@ -162,7 +162,7 @@ app = FastAPI()
 
 @app.post("/benchmark",response_model=GenerateBenchmarkResponse) 
 def generate_benchmark_report(request: GenerateBenchmarkRequest):
-  print(f'DEBUG: GenerateBenchmarkRequest:{request}")
+  print(f'DEBUG: GenerateBenchmarkRequest:{request}')
   try:
       with torch.no_grad():
         test_name=f'benchmark:{model_id} on {device} with {request.max_new_tokens} output tokens'
