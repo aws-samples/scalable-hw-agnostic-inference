@@ -20,9 +20,14 @@ models = [
         'port_env': 'DS_R1_8B_SERVICE_PORT'
     },
     {
-        'name': 'Deepseek70B',
-        'host_env': 'DS_R1_70B_SERVICE_HOST',
-        'port_env': 'DS_R1_70B_SERVICE_PORT'
+        'name': 'DeepSeek-R1-Distill-Llama-70B-Neuron-bs8-nc16',
+        'host_env': 'DS_R1_70B_SERVICE_HOST_A',
+        'port_env': 'DS_R1_70B_SERVICE_PORT_A'
+    },
+    {
+        'name': 'DeepSeek-R1-Distill-Llama-70B-Neuron-bs4-nc24',
+        'host_env': 'DS_R1_70B_SERVICE_HOST_B',
+        'port_env': 'DS_R1_70B_SERVICE_PORT_B'
     }
 ]
 
@@ -103,7 +108,7 @@ def ready():
     return {"message": "Service is ready"}
 
 with gr.Blocks() as interface:
-    gr.Markdown(f"# {model_id} Text Generation App and Benchmark App")
+    gr.Markdown(f"# LLM Text Generation App and Benchmark App")
     gr.Markdown("Enter a prompt to generate text using different models.")
 
     with gr.Row():
