@@ -59,7 +59,7 @@ async def fetch_benchmark(client, url, prompt, n_runs=1, max_new_tokens=32):
         "max_new_tokens": max_new_tokens
     }
     try:
-        response = await client.post(endpoint, json=payload, timeout=60.0)
+        response = await client.post(endpoint, json=payload, timeout=300.0)
         response.raise_for_status()
         data = response.json()
 
@@ -112,7 +112,7 @@ with gr.Blocks() as interface:
             #generate_button = gr.Button("Generate Text",variant="primary")
             task_type = gr.Dropdown(label="Task Type",choices=["fetch_text", "fetch_benchmark"],value="fetch_text",interactive=True)
             n_runs_box = gr.Number(label="Number of Runs (Benchmark)",value=1)
-            max_new_tokens_box = gr.Number(label="Max New Tokens (Benchmark)",value=32)
+            max_new_tokens_box = gr.Number(label="Max New Tokens",value=32)
             generate_button = gr.Button("Run Task", variant="primary")
         
         with gr.Column(scale=2):
