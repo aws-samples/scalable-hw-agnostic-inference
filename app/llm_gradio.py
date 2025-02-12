@@ -11,7 +11,8 @@ import traceback
 
 app = FastAPI()
 
-model_id=os.environ['MODEL_ID']
+model_id_a=os.environ['MODEL_ID_A']
+model_id_b=os.environ['MODEL_ID_B']
 
 models = [
     {
@@ -20,12 +21,12 @@ models = [
         'port_env': 'DS_R1_8B_SERVICE_PORT'
     },
     {
-        'name': 'DeepSeek-R1-Distill-Llama-70B-Neuron-bs8-nc16',
+        'name': model_id_a,
         'host_env': 'DS_R1_70B_SERVICE_HOST_A',
         'port_env': 'DS_R1_70B_SERVICE_PORT_A'
     },
     {
-        'name': 'DeepSeek-R1-Distill-Llama-70B-Neuron-bs4-nc24',
+        'name': model_id_b,
         'host_env': 'DS_R1_70B_SERVICE_HOST_B',
         'port_env': 'DS_R1_70B_SERVICE_PORT_B'
     }
