@@ -13,6 +13,7 @@ app = FastAPI()
 
 model_id_a=os.environ['MODEL_ID_A']
 model_id_b=os.environ['MODEL_ID_B']
+model_id_c=os.environ['MODEL_ID_C']
 
 models = [
     {
@@ -29,6 +30,11 @@ models = [
         'name': model_id_b,
         'host_env': 'DS_R1_70B_B_SERVICE_HOST',
         'port_env': 'DS_R1_70B_B_SERVICE_PORT'
+    },
+    {
+        'name': model_id_c,
+        'host_env': 'META_LLAM3_70B_SERVICE_HOST',
+        'port_env': 'META_LLAM3_70B_SERVICE_PORT'
     }
 ]
 
