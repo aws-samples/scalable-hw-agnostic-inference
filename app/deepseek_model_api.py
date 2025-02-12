@@ -32,6 +32,7 @@ from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 tokenizer.pad_token_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 
+login(hf_token, add_to_git_credential=True)
 
 if device=='xla':
   from optimum.neuron import NeuronModelForCausalLM
