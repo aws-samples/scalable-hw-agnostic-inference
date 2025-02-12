@@ -22,13 +22,13 @@ models = [
     },
     {
         'name': model_id_a,
-        'host_env': 'DS_R1_70B_SERVICE_HOST_A',
-        'port_env': 'DS_R1_70B_SERVICE_PORT_A'
+        'host_env': 'DS_R1_70B_A_SERVICE_HOST',
+        'port_env': 'DS_R1_70B_A_SERVICE_PORT'
     },
     {
         'name': model_id_b,
-        'host_env': 'DS_R1_70B_SERVICE_HOST_B',
-        'port_env': 'DS_R1_70B_SERVICE_PORT_B'
+        'host_env': 'DS_R1_70B_B_SERVICE_HOST',
+        'port_env': 'DS_R1_70B_B_SERVICE_PORT'
     }
 ]
 
