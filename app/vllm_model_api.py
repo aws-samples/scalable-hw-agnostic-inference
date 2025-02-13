@@ -92,7 +92,8 @@ def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
-        res = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+        #res = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+        res = model.generate(prompt,sampling_params)
         latency_collector.hook()
 
     p0_latency_ms = latency_collector.percentile(0) * 1000
