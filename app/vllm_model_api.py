@@ -53,7 +53,7 @@ def gentext(prompt,max_new_tokens):
   #  inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
   #elif device=='cpu':
   #  inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
-  outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+  #outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
   outputs = model.generate(prompt,sampling_params)
   outputs = outputs[0, inputs.input_ids.size(-1):]
   response = tokenizer.decode(outputs, skip_special_tokens=True)
