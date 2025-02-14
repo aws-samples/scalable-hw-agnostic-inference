@@ -33,8 +33,8 @@ models = [
     },
     {
         'name': model_id_c,
-        'host_env': 'META_LLAM3_70B_SERVICE_HOST',
-        'port_env': 'META_LLAM3_70B_SERVICE_PORT'
+        'host_env': 'DS_R1_8B_SERVICE_HOST',
+        'port_env': 'DS_R1_8B_SERVICE_PORT'
     }
 ]
 

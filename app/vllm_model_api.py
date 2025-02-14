@@ -16,6 +16,7 @@ from starlette.responses import StreamingResponse
 import base64
 from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
+import yaml
 
 cw_namespace='hw-agnostic-infer'
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
@@ -29,6 +30,9 @@ device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
 default_max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
+
+with open("/vllm_config.yaml", "r") as file:
+  vllm_config=yaml.safe_load(file)
 
 from transformers import AutoTokenizer
 
@@ -157,17 +161,7 @@ class GenerateBenchmarkResponse(BaseModel):
 def load_model():
   if device=='xla':
     #model = NeuronModelForCausalLM.from_pretrained(compiled_model_id)
-    model = LLM(
-      model=compiled_model_id,
-      tokenizer=model_id,
-      tensor_parallel_size=2,
-      max_num_seqs=4,
-      max_model_len=8192,
-      block_size=8,
-      device="neuron",
-      use_v2_block_manager=True,
-      trust_remote_code=True,
-    )
+    model = LLM(**vllm_config)
   elif device=='cuda':
     model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
   elif device=='cpu':
