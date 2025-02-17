@@ -10,7 +10,7 @@ import httpx
 import traceback
 import json
 
-MODELS_FILE_PATH = "/llm_gradio_models.json"
+app_name=os.environ['MODELS_FILE_PATH']
 
 def load_models_config():
   try:
