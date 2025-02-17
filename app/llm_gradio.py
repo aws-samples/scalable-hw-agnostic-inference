@@ -23,7 +23,7 @@ def load_models_config():
 
 app = FastAPI()
 
-models = load_models()
+models = load_models_config()
 
 '''
 models = [
