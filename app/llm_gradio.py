@@ -8,35 +8,47 @@ import base64
 import asyncio
 import httpx
 import traceback
+import json
+
+MODELS_FILE_PATH = "/llm_gradio_models.json"
+
+def load_models_config():
+  try:
+    with open(MODELS_FILE_PATH, "r") as f:
+      models = json.load(f)
+      return models
+  except Exception as e:
+    print(f"Error loading models config: {e}")
+    return []
 
 app = FastAPI()
 
-model_id_a=os.environ['MODEL_ID_A']
-model_id_b=os.environ['MODEL_ID_B']
-model_id_c=os.environ['MODEL_ID_C']
+models = load_models()
 
+'''
 models = [
     {
-        'name': 'Deepseek8B',
-        'host_env': 'DS_R1_8B_SERVICE_HOST',
-        'port_env': 'DS_R1_8B_SERVICE_PORT'
+        'name': 'DeepSeek8BNxD',
+        'host_env': 'DS_R1_8B_NXD_SERVICE_HOST',
+        'port_env': 'DS_R1_8B_NXD_SERVICE_PORT'
     },
     {
-        'name': model_id_a,
+        'name': 'DeepSeek8BTnX',
         'host_env': 'DS_R1_70B_A_SERVICE_HOST',
         'port_env': 'DS_R1_70B_A_SERVICE_PORT'
     },
     {
-        'name': model_id_b,
-        'host_env': 'DS_R1_70B_B_SERVICE_HOST',
-        'port_env': 'DS_R1_70B_B_SERVICE_PORT'
+        'name': 'DeepSeek70BTnX',
+        'host_env': 'DS_R1_70B_TNX_SERVICE_HOST',
+        'port_env': 'DS_R1_70B_TNX_SERVICE_PORT'
     },
     {
-        'name': model_id_c,
-        'host_env': 'DS_R1_8B_SERVICE_HOST',
-        'port_env': 'DS_R1_8B_SERVICE_PORT'
+        'name': 'DeepSeek70BNxD',
+        'host_env': 'DS_R1_70B_A_SERVICE_HOST',
+        'port_env': 'DS_R1_70B_A_SERVICE_PORT'
     }
 ]
+'''
 
 for model in models:
     host = os.environ[model['host_env']]
