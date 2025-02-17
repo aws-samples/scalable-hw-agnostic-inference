@@ -10,7 +10,7 @@ import httpx
 import traceback
 import json
 
-app_name=os.environ['MODELS_FILE_PATH']
+MODELS_FILE_PATH=os.environ['MODELS_FILE_PATH']
 
 def load_models_config():
   try:
