@@ -1,9 +1,9 @@
 import os
 from huggingface_hub import login
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-max_model_len=os.environ['MAX_MODEL_LEN']
-max_num_seqs=os.environ['MAX_NUM_SEQS']
-tensor_parallel_size=os.environ['TENSOR_PARALLEL_SIZE']
+max_model_len=int(os.environ['MAX_MODEL_LEN'])
+max_num_seqs=int(os.environ['MAX_NUM_SEQS'])
+tensor_parallel_size=int(os.environ['TENSOR_PARALLEL_SIZE'])
 model_name=os.environ['MODEL_NAME']
 compiled_model_name=os.environ['COMPILED_MODEL_NAME']
 os.environ['VLLM_NEURON_FRAMEWORK'] = "neuronx-distributed-inference"
