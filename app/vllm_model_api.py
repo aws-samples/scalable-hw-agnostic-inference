@@ -14,45 +14,31 @@ from typing import Any, Dict, Optional, Union
 from huggingface_hub import login
 from starlette.responses import StreamingResponse
 import base64
+from vllm import LLM, SamplingParams
+from sentence_transformers import SentenceTransformer
+import yaml
+from transformers_neuronx import NeuronConfig, QuantizationConfig
 
 cw_namespace='hw-agnostic-infer'
+default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
+sampling_params = SamplingParams(temperature=0.7,top_k=50,top_p=0.9,max_tokens=128,)
 
 app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
-model_id = os.environ['MODEL_ID']
-compiled_model_id=os.environ['COMPILED_MODEL_ID']
 device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-default_max_new_tokens=int(os.environ['MAX_NEW_TOKENS'])
 
-from transformers import AutoTokenizer
-
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-tokenizer.pad_token_id = tokenizer.eos_token_id if tokenizer.pad_token_id is None else tokenizer.pad_token_id
+with open("/vllm_config.yaml", "r") as file:
+  vllm_config=yaml.safe_load(file)
 
 login(hf_token, add_to_git_credential=True)
 
-if device=='xla':
-  from optimum.neuron import NeuronModelForCausalLM
-elif device=='cuda':
-  from transformers import AutoModelForCausalLM,BitsAndBytesConfig
-  quantization_config = BitsAndBytesConfig(load_in_4bit=True,bnb_4bit_use_double_quant=True,bnb_4bit_compute_dtype=torch.float16)
-elif device == 'cpu':
-  from transformers import AutoModelForCausalLM
-
 def gentext(prompt,max_new_tokens):
   start_time = time.time()
-  if device=='xla':
-    inputs = tokenizer(prompt, return_tensors="pt")
-  elif device=='cuda':
-    inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
-  elif device=='cpu':
-    inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
-  outputs = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
-  outputs = outputs[0, inputs.input_ids.size(-1):]
-  response = tokenizer.decode(outputs, skip_special_tokens=True)
+  outputs = model.generate(prompt,sampling_params)
+  response = outputs[0].outputs[0].text
   total_time =  time.time()-start_time
   return str(response), float(total_time)
 
@@ -70,24 +56,16 @@ def cw_pub_metric(metric_name,metric_value,metric_unit):
   print(f"in pub_deployment_counter - response:{response}")
   return response
 
-# Login to Hugging Face
 login(hf_token, add_to_git_credential=True)
 
 # TBD change to text from image
 def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
-    if device=='xla':
-      inputs = tokenizer(prompt, return_tensors="pt")
-    elif device=='cuda':
-      inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
-    elif device=='cpu':
-      inputs = tokenizer(prompt, return_tensors="pt").to('cpu')
-
-    warmup_run = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+    warmup_run = model.generate(prompt,sampling_params)
     latency_collector = LatencyCollector()
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
-        res = model.generate(**inputs,max_new_tokens=max_new_tokens,do_sample=True,use_cache=True,temperature=0.7,top_k=50,top_p=0.9)
+        res = model.generate(prompt,sampling_params)
         latency_collector.hook()
 
     p0_latency_ms = latency_collector.percentile(0) * 1000
@@ -148,12 +126,7 @@ class GenerateBenchmarkResponse(BaseModel):
     report: str = Field(..., description="Benchmark report")
 
 def load_model():
-  if device=='xla':
-    model = NeuronModelForCausalLM.from_pretrained(compiled_model_id)
-  elif device=='cuda':
-    model = AutoModelForCausalLM.from_pretrained(model_id,use_cache=True,device_map='auto',torch_dtype=torch.float16,quantization_config=quantization_config,)
-  elif device=='cpu':
-    model=AutoModelForCausalLM.from_pretrained(model_id)  
+  model = LLM(**vllm_config)
   return model
 
 model = load_model()
@@ -166,7 +139,7 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
   print(f'DEBUG: GenerateBenchmarkRequest:{request}')
   try:
       with torch.no_grad():
-        test_name=f'benchmark:{model_id} on {device} with {request.max_new_tokens} output tokens'
+        test_name=f'benchmark:{app_name} on {device} with {request.max_new_tokens} output tokens'
         response_report=benchmark(request.n_runs,test_name,model,request.prompt,request.max_new_tokens)
         report_base64 = base64.b64encode(response_report.encode()).decode()
       return GenerateBenchmarkResponse(report=report_base64)
