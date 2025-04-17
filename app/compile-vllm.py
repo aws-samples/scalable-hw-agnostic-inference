@@ -7,7 +7,7 @@ max_num_seqs=int(os.environ['MAX_NUM_SEQS'])
 tensor_parallel_size=int(os.environ['TENSOR_PARALLEL_SIZE'])
 model_name=os.environ['MODEL_NAME']
 compiled_model_name=os.environ['COMPILED_MODEL_NAME']
-os.environ['VLLM_NEURON_FRAMEWORK'] = "neuronx-distributed-inference"
+#os.environ['VLLM_NEURON_FRAMEWORK'] = "neuronx-distributed-inference"
 os.environ['NEURON_COMPILED_ARTIFACTS']=model_name
 
 login(hf_token,add_to_git_credential=True)

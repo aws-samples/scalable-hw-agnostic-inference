@@ -11,18 +11,18 @@ RUN python -m pip install fastapi
 RUN python -m pip install matplotlib Pillow
 RUN pip install httpx
 
-RUN pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com && \
-    pip install --upgrade \
-        optimum[neuronx] \
-        optimum-neuron \
-        neuronx-cc \
-        transformers_neuronx \
-        neuronx_distributed \
-        transformers \
-        torch-neuronx \
-        accelerate \
-        diffusers \
-        protobuf 
+#RUN pip config set global.extra-index-url https://pip.repos.neuron.amazonaws.com && \
+#    pip install --upgrade \
+#        optimum[neuronx] \
+#        optimum-neuron \
+#        neuronx-cc \
+#        transformers_neuronx \
+#        neuronx_distributed \
+#        transformers \
+#        torch-neuronx \
+#        accelerate \
+#        diffusers \
+#        protobuf 
 
 RUN apt-get update
 RUN mkdir -p /etc/apt/keyrings/

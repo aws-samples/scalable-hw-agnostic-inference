@@ -5,8 +5,8 @@ import time
 import argparse
 import torch
 import torch.nn as nn
-import torch_neuronx
-import neuronx_distributed
+#import torch_neuronx
+#import neuronx_distributed
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -17,7 +17,6 @@ import base64
 from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
 import yaml
-from transformers_neuronx import NeuronConfig, QuantizationConfig
 
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
