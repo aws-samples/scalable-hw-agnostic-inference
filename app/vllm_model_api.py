@@ -25,7 +25,6 @@ sampling_params = SamplingParams(temperature=0.7,top_k=50,top_p=0.9,max_tokens=1
 
 app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
-device = os.environ["DEVICE"]
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
 
@@ -138,7 +137,7 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
   print(f'DEBUG: GenerateBenchmarkRequest:{request}')
   try:
       with torch.no_grad():
-        test_name=f'benchmark:{app_name} on {device} with {request.max_new_tokens} output tokens'
+        test_name=f'benchmark:{app_name} on {nodepool} with {request.max_new_tokens} output tokens'
         response_report=benchmark(request.n_runs,test_name,model,request.prompt,request.max_new_tokens)
         report_base64 = base64.b64encode(response_report.encode()).decode()
       return GenerateBenchmarkResponse(report=report_base64)
