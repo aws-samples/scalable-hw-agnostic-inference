@@ -75,7 +75,7 @@ async def fetch_end_to_end(
 
 async def orchestrate_calls(prompt: str, num_steps: int):
     async with httpx.AsyncClient() as client:
-        tasks = [fetch_end_to_end(client, cfg, prompt, num_steps) for cfg in IMAGE_MODELS]
+        tasks = [fetch_end_to_end(client, cfg, prompt, num_steps) for cfg in models]
         results = await asyncio.gather(*tasks)
 
     # Flatten results for gradio →  [img, img_lat, caption, cap_lat] * N
@@ -102,7 +102,7 @@ with gr.Blocks() as interface:
             cap_out_components:  list = []
             cap_lat_components:  list = []
 
-            for cfg in IMAGE_MODELS:
+            for cfg in models:
                 with gr.Group():
                     gr.Markdown(f"### {cfg['name']}")
                     img = gr.Image(height=cfg["height"]//2,
