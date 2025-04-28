@@ -27,6 +27,8 @@ app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
+repo_id=os.environ['MODEL_ID']
+os.environ['NEURON_COMPILED_ARTIFACTS']=repo_id
 
 with open("/vllm_config.yaml", "r") as file:
   vllm_config=yaml.safe_load(file)
