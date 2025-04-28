@@ -4,9 +4,23 @@ import gradio as gr
 import httpx
 from PIL import Image
 from fastapi import FastAPI
+import json
+
+MODELS_FILE_PATH=os.environ['MODELS_FILE_PATH']
+
+def load_models_config():
+  try:
+    with open(MODELS_FILE_PATH, "r") as f:
+      models = json.load(f)
+      return models
+  except Exception as e:
+    print(f"Error loading models config: {e}")
+    return []
+
+models = load_models_config()
 
 app = FastAPI()
-
+'''
 IMAGE_MODELS = [
     dict(
         name="512 × 512",
@@ -21,13 +35,12 @@ IMAGE_MODELS = [
         caption_max_new_tokens=64,
     )
 ]
-
-for m in IMAGE_MODELS:
+'''
+for m in models:
     m["image_url"]   = f'http://{os.environ[m["host_env"]]}:{os.environ[m["port_env"]]}/generate'
     m["caption_url"] = f'http://{os.environ[m["caption_host_env"]]}:{os.environ[m["caption_port_env"]]}/generate'
 
 async def post_json(client: httpx.AsyncClient, url: str, payload: dict, timeout: float = 60.0):
-    """Small wrapper that returns (json, elapsed_seconds) or raises."""
     start = asyncio.get_event_loop().time()
     r = await client.post(url, json=payload, timeout=timeout)
     r.raise_for_status()
@@ -71,11 +84,8 @@ async def orchestrate_calls(prompt: str, num_steps: int):
         flat.extend(tup)
     return flat
 
-# ---------------------------------------------------------------------------
-# ❸ Gradio UI
-# ---------------------------------------------------------------------------
 with gr.Blocks() as interface:
-    gr.Markdown("# ⚡ Flux Image-Gen + vLLM Caption Demo")
+    gr.Markdown("# ⚡ Flux Image-Gen + vLLM(Llama3.2 Multimodal Models) Caption Demo")
     gr.Markdown("Enter a text prompt ➜ model draws an image ➜ LLM describes the image.")
 
     with gr.Row():
