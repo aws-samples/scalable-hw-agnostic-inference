@@ -142,6 +142,13 @@ class NeuronFluxTransformer2DModel(nn.Module):
         joint_attention_kwargs: Optional[Dict[str, Any]] = None,
         return_dict: bool = False,
     ) -> Union[torch.FloatTensor, Transformer2DModelOutput]:
+        
+        if txt_ids is not None and txt_ids.dim() == 2:          # (S,3) → (1,S,3)
+            txt_ids = txt_ids.unsqueeze(0)
+        if img_ids is not None and img_ids.dim() == 2:          # (S,3) → (1,S,3)
+            img_ids = img_ids.unsqueeze(0)
+        if pooled_projections is not None and pooled_projections.dim() == 2:
+            pooled_projections = pooled_projections.unsqueeze(0)
 
         hidden_states = self.x_embedder(hidden_states)
 
