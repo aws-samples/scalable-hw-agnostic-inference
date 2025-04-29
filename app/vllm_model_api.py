@@ -45,13 +45,13 @@ def chunk_tokens(token_ids, chunk_size=131072, overlap=8192):
   ]
 
 def gentext(prompt,max_new_tokens):
-'''
+  '''
   start_time = time.time()
   outputs = model.generate(prompt,sampling_params)
   response = outputs[0].outputs[0].text
   total_time =  time.time()-start_time
   return str(response), float(total_time)
-'''
+  '''
   total_time = 0.0
   response_parts = []
   token_ids = tokenizer.encode(prompt)
