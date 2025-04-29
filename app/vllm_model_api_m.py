@@ -50,7 +50,8 @@ def gentext(prompt, max_new_tokens, image_b64: str | None):
   else:
     inp = prompt
 
-  sp = SamplingParams(**sampling_params.model_dump(),max_tokens=max_new_tokens)
+  #sp = SamplingParams(**sampling_params.model_dump(),max_tokens=max_new_tokens)
+  sp = SamplingParams(**sampling_params.dict(), max_tokens=max_new_tokens)
   outputs = model.generate(inp, sp)
 
 
