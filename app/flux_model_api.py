@@ -343,7 +343,7 @@ def generate_image(request: GenerateImageRequest):
         with torch.no_grad():
             output = model(**model_args)
             image = output.images[0]
-            image.thumbnail((512, 512), Image.LANCZOS)
+            image.thumbnail((128, 128), Image.LANCZOS)
             # Save image to bytes
             from io import BytesIO
             buf = BytesIO()
