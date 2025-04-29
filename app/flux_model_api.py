@@ -152,6 +152,12 @@ class NeuronFluxTransformer2DModel(nn.Module):
         # pooled_projections must stay 2-D (B,768); only lift 1-D edge-cases
         if pooled_projections is not None and pooled_projections.dim() == 1:
             pooled_projections = pooled_projections.unsqueeze(0)
+        # pooled_projections must be (B,768)
+        if pooled_projections is not None:
+            if pooled_projections.dim() == 1:  
+                pooled_projections = pooled_projections.unsqueeze(0)
+            elif pooled_projections.dim() == 3 and pooled_projections.size(1) == 1:
+                pooled_projections = pooled_projections.squeeze(1)  # (1,1,768) → (1,768)
         hidden_states = self.x_embedder(hidden_states)
 
         hidden_states, temb, image_rotary_emb = self.embedders_model(
