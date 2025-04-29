@@ -17,6 +17,7 @@ import base64
 from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
 import yaml
+from transformers import AutoTokenizer
 
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
@@ -35,13 +36,38 @@ with open("/vllm_config.yaml", "r") as file:
 
 login(hf_token, add_to_git_credential=True)
 
+tokenizer = AutoTokenizer.from_pretrained(repo_id, use_fast=True)
+def chunk_tokens(token_ids, chunk_size=131072, overlap=8192):
+  step = chunk_size - overlap
+  return [
+    token_ids[i : i + chunk_size]
+    for i in range(0, len(token_ids), step)
+  ]
+
 def gentext(prompt,max_new_tokens):
+'''
   start_time = time.time()
   outputs = model.generate(prompt,sampling_params)
   response = outputs[0].outputs[0].text
   total_time =  time.time()-start_time
   return str(response), float(total_time)
+'''
+  total_time = 0.0
+  response_parts = []
+  token_ids = tokenizer.encode(prompt)
+  for chunk in chunk_tokens(
+      token_ids,
+      chunk_size=vllm_config["max_model_len"],
+      overlap=8192
+    ):
+    chunk_text = tokenizer.decode(chunk, skip_special_tokens=True)
 
+    start = time.time()
+    outputs = model.generate(chunk_text, sampling_params)
+    total_time += time.time() - start
+
+  response_parts.append(outputs[0].outputs[0].text)
+  
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
     Namespace=cw_namespace,
