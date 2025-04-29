@@ -14,7 +14,8 @@ from huggingface_hub import login
 from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from starlette.responses import StreamingResponse
-import base64
+from PIL import Image
+import io, base64
 
 cw_namespace='hw-agnostic-infer'
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
@@ -36,6 +37,18 @@ guidance_scale = float(os.environ['GUIDANCE_SCALE'])
 COMPILER_WORKDIR_ROOT = os.environ['COMPILER_WORKDIR_ROOT']
 
 DTYPE=torch.bfloat16
+
+def resize_base64_image(b64_png: str, max_side: int = 512) -> str:
+    """
+    Decode a base64-PNG, downscale so its longest side ≤ max_side (preserving aspect),
+    then re-encode to base64-PNG.
+    """
+    img_data = base64.b64decode(b64_png)
+    img = Image.open(io.BytesIO(img_data)).convert("RGB")
+    img.thumbnail((max_side, max_side), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode()
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
@@ -99,6 +112,7 @@ class TextEncoder2Wrapper(nn.Module):
 class GenerateImageRequest(BaseModel):
     prompt: str
     num_inference_steps: int
+    image_base64: str
 
 class GenerateImageResponse(BaseModel):
     image: str = Field(..., description="Base64-encoded image")
@@ -318,6 +332,8 @@ benchmark(10,test_name,model,model_inputs)
 @app.post("/generate", response_model=GenerateImageResponse)
 def generate_image(request: GenerateImageRequest):
     start_time = time.time()
+    small_b64 = resize_base64_image(request.image_base64, max_side=512)
+    request.image_base64 = small_b64
     try:
         model_args = {
             'prompt': request.prompt,
