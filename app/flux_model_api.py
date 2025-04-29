@@ -112,7 +112,6 @@ class TextEncoder2Wrapper(nn.Module):
 class GenerateImageRequest(BaseModel):
     prompt: str
     num_inference_steps: int
-    image_base64: str
 
 class GenerateImageResponse(BaseModel):
     image: str = Field(..., description="Base64-encoded image")
@@ -332,8 +331,6 @@ benchmark(10,test_name,model,model_inputs)
 @app.post("/generate", response_model=GenerateImageResponse)
 def generate_image(request: GenerateImageRequest):
     start_time = time.time()
-    small_b64 = resize_base64_image(request.image_base64, max_side=512)
-    request.image_base64 = small_b64
     try:
         model_args = {
             'prompt': request.prompt,
@@ -346,6 +343,7 @@ def generate_image(request: GenerateImageRequest):
         with torch.no_grad():
             output = model(**model_args)
             image = output.images[0]
+            image.thumbnail((512, 512), Image.LANCZOS)
             # Save image to bytes
             from io import BytesIO
             buf = BytesIO()
