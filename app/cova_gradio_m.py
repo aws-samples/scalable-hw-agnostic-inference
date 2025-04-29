@@ -20,22 +20,7 @@ def load_models_config():
 models = load_models_config()
 
 app = FastAPI()
-'''
-IMAGE_MODELS = [
-    dict(
-        name="512 × 512",
-        host_env="FLUX_NEURON_512X512_MODEL_API_SERVICE_HOST",
-        port_env="FLUX_NEURON_512X512_MODEL_API_SERVICE_PORT",
-        height=512,
-        width=512,
-        # caption backend for this image size
-        caption_host_env="MLLAMA_32_11B_VLLM_TRN1_SERVICE_HOST",
-        caption_port_env="MLLAMA_32_11B_VLLM_TRN1_SERVICE_PORT",
-        # number of caption tokens to ask for per request
-        caption_max_new_tokens=64,
-    )
-]
-'''
+
 for m in models:
     m["image_url"]   = f'http://{os.environ[m["host_env"]]}:{os.environ[m["port_env"]]}/generate'
     m["caption_url"] = f'http://{os.environ[m["caption_host_env"]]}:{os.environ[m["caption_port_env"]]}/generate'
@@ -64,10 +49,16 @@ async def fetch_end_to_end(
     image = Image.open(io.BytesIO(base64.b64decode(img_json["image"])))
 
     # vLLM to describe that image
+    #img_b64 = pil_to_base64(image)
+    #caption_prompt = f"Describe the content of this image (base64 PNG follows): {img_b64}"
+    #cap_payload = {"prompt": caption_prompt,
+    #               "max_new_tokens": model_cfg["caption_max_new_tokens"]}
     img_b64 = pil_to_base64(image)
-    caption_prompt = f"Describe the content of this image (base64 PNG follows): {img_b64}"
-    cap_payload = {"prompt": caption_prompt,
-                   "max_new_tokens": model_cfg["caption_max_new_tokens"]}
+    cap_payload = {
+       "prompt": "Describe this image",
+       "image":  img_b64,
+       "max_new_tokens": model_cfg["caption_max_new_tokens"],
+    }
     cap_json, cap_latency = await post_json(client, model_cfg["caption_url"], cap_payload)
     caption = base64.b64decode(cap_json["text"]).decode()
 
