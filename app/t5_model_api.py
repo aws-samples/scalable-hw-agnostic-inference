@@ -34,7 +34,7 @@ model = parallel_model_load(local_dir)
 
 def gentext(prompt,max_new_tokens):
   start_time = time.time()
-  inputs = tokenizer(promp, return_tensors="pt", truncation=True, padding="max_length", max_length=max_new_tokens)
+  inputs = tokenizer(prompt, return_tensors="pt", truncation=True, padding="max_length", max_length=max_new_tokens)
   with torch.no_grad():
     output = model(inputs["input_ids"], inputs["attention_mask"])
   if isinstance(output, dict):
