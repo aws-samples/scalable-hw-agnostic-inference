@@ -15,7 +15,6 @@ from transformers import T5Tokenizer
 from neuronx_distributed.trace import parallel_model_load
 
 cw_namespace='hw-agnostic-infer'
-default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
 
 app_name=os.environ['APP']
@@ -27,6 +26,7 @@ model_id=os.environ['MODEL_ID']
 repo_id=os.environ['COMPILED_MODEL_ID']
 local_dir=snapshot_download(repo_id,allow_patterns="tp_*.pt")
 max_sequence_length = int(os.environ['MAX_SEQ_LEN'])
+default_max_new_tokens=max_sequence_length
 
 tokenizer = T5Tokenizer.from_pretrained(model_id)
 tokenizer.model_max_length = max_sequence_length
