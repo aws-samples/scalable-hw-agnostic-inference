@@ -17,7 +17,6 @@ from neuronx_distributed.trace import parallel_model_load
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
-sampling_params = SamplingParams(temperature=0.7,top_k=50,top_p=0.9,max_tokens=128,)
 
 app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
