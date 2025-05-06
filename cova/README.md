@@ -95,6 +95,8 @@ Outputs Base64‑encoded embedding string + latency in seconds.
 
 ![Cova (Content Validation) UI – image, caption and embeddings side‑by‑side](./app-demo.png)
 
+We can see the time it took to generate the image (5.61s), the caption (5.70s), the caption embeddings (0.20s) and the prompt embeddings (0.09s). 
+
 ## 🧹 Cleanup
 
 ```bash
