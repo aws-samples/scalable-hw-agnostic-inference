@@ -25,31 +25,6 @@ app = FastAPI()
 
 models = load_models_config()
 
-'''
-models = [
-    {
-        'name': 'DeepSeek8BNxD',
-        'host_env': 'DS_R1_8B_NXD_SERVICE_HOST',
-        'port_env': 'DS_R1_8B_NXD_SERVICE_PORT'
-    },
-    {
-        'name': 'DeepSeek8BTnX',
-        'host_env': 'DS_R1_70B_A_SERVICE_HOST',
-        'port_env': 'DS_R1_70B_A_SERVICE_PORT'
-    },
-    {
-        'name': 'DeepSeek70BTnX',
-        'host_env': 'DS_R1_70B_TNX_SERVICE_HOST',
-        'port_env': 'DS_R1_70B_TNX_SERVICE_PORT'
-    },
-    {
-        'name': 'DeepSeek70BNxD',
-        'host_env': 'DS_R1_70B_A_SERVICE_HOST',
-        'port_env': 'DS_R1_70B_A_SERVICE_PORT'
-    }
-]
-'''
-
 for model in models:
     host = os.environ[model['host_env']]
     port = os.environ[model['port_env']]
