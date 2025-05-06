@@ -1,4 +1,4 @@
-# ⚡ Image generation va;idation (cova) Demo – Multimodal Inference on NxD (EKS centric)
+# ⚡ Image generation validation (cova) Demo – Multimodal Inference on NxD (EKS centric)
 
 A Gradio web app that chains **three model micro‑services**:
 
