@@ -1,4 +1,4 @@
-# ⚡ COVA Demo – Multimodal Inference on Kubernetes
+# ⚡ Image generation va;idation (cova) Demo – Multimodal Inference on NxD (EKS centric)
 
 A Gradio web app that chains **three model micro‑services**:
 
