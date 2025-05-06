@@ -60,16 +60,16 @@ async def fetch_end_to_end(
     caption = base64.b64decode(cap_json["text"]).decode()
     
     #Generate the embeddings
-    if "encoder_url" in model_cfg:
-       enc_json, enc_cap_latency = await post_json(client, model_cfg["encoder_url"], {"prompt": caption,
-            "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)
-       }
-       enc_cap = base64.b64decode(enc_json["text"]).decode()
-
-       enc_prompt_json, enc_prompt_latency = await post_json(client,model_cfg["encoder_url"],{"prompt": prompt,
+    enc_json, enc_cap_latency = await post_json(client, model_cfg["encoder_url"], {"prompt": caption,
             "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)}
-       )
-       enc_prompt=base64.b64decode(enc_prompt_json["text"]).decode()
+    )
+    enc_cap = base64.b64decode(enc_json["text"]).decode()
+
+    enc_prompt_json, enc_prompt_latency = await post_json(client,model_cfg["encoder_url"],{"prompt": prompt,
+            "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)}
+    )
+    enc_prompt=base64.b64decode(enc_prompt_json["text"]).decode()
+
     return (image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s",enc_cap,f"{enc_cap_latency:.2f}s",enc_prompt,f"{enc_prompt_latency:.2f}s")
 
 async def orchestrate_calls(prompt: str, num_steps: int):
