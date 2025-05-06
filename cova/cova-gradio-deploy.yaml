@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cova-gradio
+spec:
+  selector:
+    app: cova-gradio
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cova-gradio
+  name: cova-gradio
+spec:
+  selector:
+    matchLabels:
+      app: cova-gradio
+  template:
+    metadata:
+      labels:
+        app: cova-gradio
+    spec:
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: kub316-ng
+      #serviceAccountName: appsimulator
+      containers:
+      - name: app
+        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/model:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: cova-gradio-volume
+            mountPath: /app
+        command: ["sh", "-c", "uvicorn cova_gradio_m:app --host=0.0.0.0"]
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: MODELS_FILE_PATH
+          value: "/app/models.json"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      volumes:
+        - name: cova-gradio-volume
+          configMap:
+            name: cova-gradio-config
+            items:
+              - key: models.json
+                path: models.json

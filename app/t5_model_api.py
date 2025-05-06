@@ -4,43 +4,46 @@ import boto3
 import time
 import argparse
 import torch
-import torch.nn as nn
-#import torch_neuronx
-#import neuronx_distributed
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Any, Dict, Optional, Union
-from huggingface_hub import login
-from starlette.responses import StreamingResponse
+from huggingface_hub import login,snapshot_download
 import base64
-from vllm import LLM, SamplingParams
-from sentence_transformers import SentenceTransformer
-import yaml
+import torch
+from transformers import T5Tokenizer
+from neuronx_distributed.trace import parallel_model_load
 
 cw_namespace='hw-agnostic-infer'
-default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
-sampling_params = SamplingParams(temperature=0.7,top_k=50,top_p=0.9,max_tokens=128,)
 
 app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
-repo_id=os.environ['MODEL_ID']
-os.environ['NEURON_COMPILED_ARTIFACTS']=repo_id
 
-with open("/vllm_config.yaml", "r") as file:
-  vllm_config=yaml.safe_load(file)
+model_id=os.environ['MODEL_ID']
+repo_id=os.environ['COMPILED_MODEL_ID']
+local_dir=snapshot_download(repo_id,allow_patterns="tp_*.pt")
+max_sequence_length = int(os.environ['MAX_SEQ_LEN'])
+default_max_new_tokens=max_sequence_length
 
-login(hf_token, add_to_git_credential=True)
+tokenizer = T5Tokenizer.from_pretrained(model_id)
+tokenizer.model_max_length = max_sequence_length
+model = parallel_model_load(local_dir)
 
 def gentext(prompt,max_new_tokens):
   start_time = time.time()
-  outputs = model.generate(prompt,sampling_params)
-  response = outputs[0].outputs[0].text
+  inputs = tokenizer(prompt, return_tensors="pt", truncation=True, padding="max_length", max_length=max_new_tokens)
+  with torch.no_grad():
+    output = model(inputs["input_ids"], inputs["attention_mask"])
+  if isinstance(output, dict):
+    last_hidden_state = output["last_hidden_state"]
+  else:
+    last_hidden_state = output  
+  embeddings = last_hidden_state.mean(dim=1).squeeze().to(torch.float32).cpu().numpy()
   total_time =  time.time()-start_time
-  return str(response), float(total_time)
+  return str(embeddings), float(total_time)
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
@@ -58,13 +61,12 @@ def cw_pub_metric(metric_name,metric_value,metric_unit):
 
 login(hf_token, add_to_git_credential=True)
 
-def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
-    warmup_run = model.generate(prompt,sampling_params)
+def benchmark(n_runs,test_name,prompt,max_new_tokens):
     latency_collector = LatencyCollector()
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
-        res = model.generate(prompt,sampling_params)
+        response_text,total_time=gentext(prompt,max_new_tokens)
         latency_collector.hook()
 
     p0_latency_ms = latency_collector.percentile(0) * 1000
@@ -124,13 +126,8 @@ class GenerateResponse(BaseModel):
 class GenerateBenchmarkResponse(BaseModel):
     report: str = Field(..., description="Benchmark report")
 
-def load_model():
-  model = LLM(**vllm_config)
-  return model
-
-model = load_model()
 prompt= "What model are you?"
-benchmark(10,"warmup",model,prompt,default_max_new_tokens)
+benchmark(10,"warmup",prompt,default_max_new_tokens)
 app = FastAPI()
 
 @app.post("/benchmark",response_model=GenerateBenchmarkResponse) 

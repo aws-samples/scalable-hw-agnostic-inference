@@ -27,6 +27,7 @@ app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
+
 repo_id=os.environ['MODEL_ID']
 os.environ['NEURON_COMPILED_ARTIFACTS']=repo_id
 
@@ -58,6 +59,7 @@ def cw_pub_metric(metric_name,metric_value,metric_unit):
 
 login(hf_token, add_to_git_credential=True)
 
+# TBD change to text from image
 def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
     warmup_run = model.generate(prompt,sampling_params)
     latency_collector = LatencyCollector()

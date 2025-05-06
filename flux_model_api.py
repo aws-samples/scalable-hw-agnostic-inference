@@ -14,8 +14,7 @@ from huggingface_hub import login
 from diffusers import FluxPipeline
 from diffusers.models.modeling_outputs import Transformer2DModelOutput
 from starlette.responses import StreamingResponse
-from PIL import Image
-import io, base64
+import base64
 
 cw_namespace='hw-agnostic-infer'
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
@@ -37,18 +36,6 @@ guidance_scale = float(os.environ['GUIDANCE_SCALE'])
 COMPILER_WORKDIR_ROOT = os.environ['COMPILER_WORKDIR_ROOT']
 
 DTYPE=torch.bfloat16
-
-def resize_base64_image(b64_png: str, max_side: int = 512) -> str:
-    """
-    Decode a base64-PNG, downscale so its longest side ≤ max_side (preserving aspect),
-    then re-encode to base64-PNG.
-    """
-    img_data = base64.b64decode(b64_png)
-    img = Image.open(io.BytesIO(img_data)).convert("RGB")
-    img.thumbnail((max_side, max_side), Image.LANCZOS)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode()
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
@@ -155,22 +142,7 @@ class NeuronFluxTransformer2DModel(nn.Module):
         joint_attention_kwargs: Optional[Dict[str, Any]] = None,
         return_dict: bool = False,
     ) -> Union[torch.FloatTensor, Transformer2DModelOutput]:
-        
-        if txt_ids is not None and txt_ids.dim() == 2:          # (S,3) → (1,S,3)
-            txt_ids = txt_ids.unsqueeze(0)
-        if img_ids is not None and img_ids.dim() == 2:          # (S,3) → (1,S,3)
-            img_ids = img_ids.unsqueeze(0)
-        if pooled_projections is not None and pooled_projections.dim() == 2:
-            pooled_projections = pooled_projections.unsqueeze(0)
-        # pooled_projections must stay 2-D (B,768); only lift 1-D edge-cases
-        if pooled_projections is not None and pooled_projections.dim() == 1:
-            pooled_projections = pooled_projections.unsqueeze(0)
-        # pooled_projections must be (B,768)
-        if pooled_projections is not None:
-            if pooled_projections.dim() == 1:  
-                pooled_projections = pooled_projections.unsqueeze(0)
-            elif pooled_projections.dim() == 3 and pooled_projections.size(1) == 1:
-                pooled_projections = pooled_projections.squeeze(1)  # (1,1,768) → (1,768)
+
         hidden_states = self.x_embedder(hidden_states)
 
         hidden_states, temb, image_rotary_emb = self.embedders_model(
@@ -343,7 +315,6 @@ def generate_image(request: GenerateImageRequest):
         with torch.no_grad():
             output = model(**model_args)
             image = output.images[0]
-            image.thumbnail((128, 128), Image.LANCZOS)
             # Save image to bytes
             from io import BytesIO
             buf = BytesIO()

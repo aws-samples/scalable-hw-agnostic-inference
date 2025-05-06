@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: t5-neuron-model-api
+spec:
+  selector:
+    app: t5-neuron-model-api
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: t5-neuron-model-api
+  name: t5-neuron-model-api
+spec:
+  selector:
+    matchLabels:
+      app: t5-neuron-model-api
+  template:
+    metadata:
+      labels:
+        app: t5-neuron-model-api
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: amd-neuron-inf2
+      serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      containers:
+      - name: app
+        image: 891377065549.dkr.ecr.us-west-2.amazonaws.com/model:amd64-neuron
+        imagePullPolicy: Always
+        volumeMounts:
+          - name: dshm
+            mountPath: /dev/shm
+        command:
+        - /bin/bash
+        - "-exc"
+        - |
+          set -x
+          pip install --upgrade pip
+          pip install --upgrade transformers accelerate protobuf sentence_transformers tenacity sentencepiece
+          uvicorn t5_model_api:app --host=0.0.0.0
+        resources:
+          requests:
+            aws.amazon.com/neuron: 8
+          limits:
+            aws.amazon.com/neuron: 8
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        env:
+        - name: APP
+          value: "t5-v1_1-large-inf2"
+        - name: NODEPOOL
+          value: "amd-neuron-inf2"
+        - name: MODEL_ID
+          value: "google/t5-v1_1-large"
+        - name: COMPILED_MODEL_ID
+          value: "yahavb/t5-v1_1-large"
+        - name: MAX_SEQ_LEN
+          value: "1024"
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      volumes:
+      - name: workdir
+        emptyDir: {}
+      - name: dshm
+        emptyDir:
+          medium: Memory

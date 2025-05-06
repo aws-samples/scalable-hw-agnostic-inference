@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cova-gradio-config
+data:
+  models.json: |
+    [
+    	{
+          "name": "512 × 512",
+          "host_env": "FLUX_NEURON_512X512_MODEL_API_SERVICE_HOST",
+          "port_env": "FLUX_NEURON_512X512_MODEL_API_SERVICE_PORT",
+          "height": 512,
+          "width": 512,
+          "caption_host_env": "MLLAMA_32_11B_VLLM_TRN1_SERVICE_HOST",
+          "caption_port_env": "MLLAMA_32_11B_VLLM_TRN1_SERVICE_PORT",
+          "caption_max_new_tokens": 1024,
+          "encoder_host_env": "T5_NEURON_MODEL_API_SERVICE_HOST",
+          "encoder_port_env": "T5_NEURON_MODEL_API_SERVICE_PORT",
+          "encoder_max_new_tokens": 1024
+        }
+    ]

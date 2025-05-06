@@ -14,9 +14,12 @@ from typing import Any, Dict, Optional, Union
 from huggingface_hub import login
 from starlette.responses import StreamingResponse
 import base64
-from vllm import LLM, SamplingParams
+from vllm import LLM, SamplingParams,TextPrompt
+from neuronx_distributed_inference.models.mllama.utils import add_instruct
 from sentence_transformers import SentenceTransformer
 import yaml
+from PIL import Image
+import io
 
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
@@ -35,9 +38,29 @@ with open("/vllm_config.yaml", "r") as file:
 
 login(hf_token, add_to_git_credential=True)
 
-def gentext(prompt,max_new_tokens):
+#def gentext(prompt,max_new_tokens):
+def gentext(prompt, max_new_tokens, image_b64: str | None):
   start_time = time.time()
-  outputs = model.generate(prompt,sampling_params)
+  if image_b64:
+    pil_img = Image.open(io.BytesIO(base64.b64decode(image_b64)))
+    has_image = torch.tensor([1])
+    instruct_prompt = add_instruct(prompt, has_image)
+    inp = TextPrompt(prompt=instruct_prompt)
+    inp["multi_modal_data"] = {"image": pil_img}
+  else:
+    inp = prompt
+
+  #sp = SamplingParams(**sampling_params.model_dump(),max_tokens=max_new_tokens)
+  #sp = SamplingParams(**sampling_params.dict(), max_tokens=max_new_tokens)
+  #from dataclasses import asdict
+  #sp = SamplingParams(**{**asdict(sampling_params), "max_tokens": max_new_tokens})
+  import copy
+  sp = copy.deepcopy(sampling_params)
+  sp.max_tokens = max_new_tokens 
+  outputs = model.generate(inp, sp)
+
+
+  #outputs = model.generate(prompt,sampling_params)
   response = outputs[0].outputs[0].text
   total_time =  time.time()-start_time
   return str(response), float(total_time)
@@ -109,8 +132,12 @@ class LatencyCollector:
         return latency_list[pos_ceil] if pos_float - pos_floor > 0.5 else latency_list[pos_floor]
 
 class GenerateRequest(BaseModel):
-    max_new_tokens: int
+    max_new_tokens: int = 128
     prompt: str
+    image: Optional[str] = Field(
+      default=None,
+      description="PNG image, Base-64-encoded (omit if no image)",
+    )
 
 class GenerateBenchmarkRequest(BaseModel):
     n_runs: int
@@ -150,7 +177,7 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
 def generate_text_post(request: GenerateRequest):
   try:
       with torch.no_grad():
-        response_text,total_time=gentext(request.prompt,request.max_new_tokens)
+        response_text,total_time=gentext(request.prompt,request.max_new_tokens,request.image)
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
       counter_metric=nodepool
