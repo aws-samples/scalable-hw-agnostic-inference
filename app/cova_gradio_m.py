@@ -24,8 +24,7 @@ app = FastAPI()
 for m in models:
     m["image_url"]   = f'http://{os.environ[m["host_env"]]}:{os.environ[m["port_env"]]}/generate'
     m["caption_url"] = f'http://{os.environ[m["caption_host_env"]]}:{os.environ[m["caption_port_env"]]}/generate'
-    if "encoder_host_env" in m and "encoder_port_env" in m:
-      m["encoder_url"] = f'http://{os.environ[m["encoder_host_env"]]}:{os.environ[m["encoder_port_env"]]}/generate'
+    m["encoder_url"] = f'http://{os.environ[m["encoder_host_env"]]}:{os.environ[m["encoder_port_env"]]}/generate'
 
 async def post_json(client: httpx.AsyncClient, url: str, payload: dict, timeout: float = 60.0):
     start = asyncio.get_event_loop().time()
@@ -62,10 +61,16 @@ async def fetch_end_to_end(
     
     #Generate the embeddings
     if "encoder_url" in model_cfg:
-       enc_json, enc_latency = await post_json(
-         client, model_cfg["encoder_url"], {"text": caption}
-       )
-       encoded = enc_json.get("encoded", str(enc_json))
+       #enc_json, enc_latency = await post_json(
+       #  client, model_cfg["encoder_url"], {"text": caption}
+       #)
+       #encoded = enc_json.get("encoded", str(enc_json))
+       enc_payload = {
+         "prompt": caption,
+         "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)
+       }
+       enc_json, enc_latency = await post_json(client, model_cfg["encoder_url"], enc_payload)
+       encoded = base64.b64decode(enc_json["text"]).decode()
        enc_latency_s = f"{enc_latency:.2f}s"
     return (image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s",encoded,enc_latency_s,)
 
