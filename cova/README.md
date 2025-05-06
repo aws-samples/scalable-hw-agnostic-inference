@@ -2,11 +2,11 @@
 
 A Gradio web app that chains **three model micro‑services**:
 
-| order | micro‑service | purpose | technology |
-|-------|---------------|---------|------------|
-| ① | **Flux Image‑Gen** | turns a text prompt into a PNG | Neuron‑compiled diffusion |
-| ② | **Llama 3.2 Captioner** | describes the generated image | vLLM on Trainium |
-| ③ | **T5 Encoder** | embeds (a) the caption and (b) the original prompt | Neuron‑compiled T5 |
+| order | micro‑service | purpose |
+|-------|---------------|---------|
+| ① | **Flux Image‑Gen** | turns a text prompt into a PNG | 
+| ② | **Llama 3.2 Captioner** | describes the generated image |
+| ③ | **T5 Encoder** | embeds (a) the caption and (b) the original prompt |
 
 All four pieces (①–③ + the Gradio orchestrator) are independent Kubernetes
 Deployments, each fronted by a ClusterIP Service.  
@@ -28,6 +28,7 @@ flowchart TD
     IMG -- image&nbsp;+&nbsp;latency --> A
     CAP -- caption&nbsp;+&nbsp;latency --> A
     ENC -- embeddings&nbsp;+&nbsp;latency --> A
+```
 
 ## Files in this repo
 
