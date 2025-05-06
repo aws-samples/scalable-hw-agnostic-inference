@@ -86,8 +86,8 @@ async def orchestrate_calls(prompt: str, num_steps: int):
     return flat
 
 with gr.Blocks() as interface:
-    gr.Markdown("# ⚡ Flux Image-Gen + vLLM(Llama3.2 Multimodal Models) Caption Demo")
-    gr.Markdown("Enter a text prompt ➜ model draws an image ➜ LLM describes the image.")
+    gr.Markdown("# ⚡ Flux Image-Gen + vLLM(Multimodal Models) Caption + T5 Encoder Demo")
+    gr.Markdown("Enter a text prompt ➜ model draws an image ➜ LLM describes the image. ➜ Generate embeddings")
 
     with gr.Row():
         # user controls
