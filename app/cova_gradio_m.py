@@ -61,18 +61,16 @@ async def fetch_end_to_end(
     
     #Generate the embeddings
     if "encoder_url" in model_cfg:
-       #enc_json, enc_latency = await post_json(
-       #  client, model_cfg["encoder_url"], {"text": caption}
-       #)
-       #encoded = enc_json.get("encoded", str(enc_json))
-       enc_payload = {
-         "prompt": caption,
-         "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)
+       enc_json, enc_cap_latency = await post_json(client, model_cfg["encoder_url"], {"prompt": caption,
+            "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)
        }
-       enc_json, enc_latency = await post_json(client, model_cfg["encoder_url"], enc_payload)
-       encoded = base64.b64decode(enc_json["text"]).decode()
-       enc_latency_s = f"{enc_latency:.2f}s"
-    return (image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s",encoded,enc_latency_s,)
+       enc_cap = base64.b64decode(enc_json["text"]).decode()
+
+       enc_prompt_json, enc_prompt_latency = await post_json(client,model_cfg["encoder_url"],{"prompt": prompt,
+            "max_new_tokens": model_cfg.get("encoder_max_new_tokens", 256)}
+       )
+       enc_prompt=base64.b64decode(enc_prompt_json["text"]).decode()
+    return (image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s",enc_cap,f"{enc_cap_latency:.2f}s",enc_prompt,f"{enc_prompt_latency:.2f}s")
 
 async def orchestrate_calls(prompt: str, num_steps: int):
     async with httpx.AsyncClient() as client:
@@ -102,8 +100,10 @@ with gr.Blocks() as interface:
             img_lat_components:  list = []
             cap_out_components:  list = []
             cap_lat_components:  list = []
-            enc_out_components:  list = []
-            enc_lat_components:  list = []
+            enc_cap_components:  list = []
+            enc_cap_lat_components:  list = []
+            enc_prompt_components:  list = []
+            enc_prompt_lat_components:  list = []
 
             for cfg in models:
                 with gr.Group():
@@ -114,15 +114,21 @@ with gr.Blocks() as interface:
                     lat = gr.Markdown()
                     cap = gr.Markdown()
                     cap_lat = gr.Markdown()
-                    enc = gr.Markdown()
-                    enc_lat = gr.Markdown()
+                    gr.Markdown("#### Caption embedding")
+                    enc_cap = gr.Markdown()
+                    gr.Markdown("#### Prompt embedding")
+                    enc_pr  = gr.Markdown()
+                    enc_cap_lat = gr.Markdown()
+                    enc_pr_lat  = gr.Markdown()
                     img_out_components.append(img)
                     img_lat_components.append(lat)
                     cap_out_components.append(cap)
                     cap_lat_components.append(cap_lat)
-                    enc_out_components.append(enc)
-                    enc_lat_components.append(enc_lat)
-
+                    enc_cap_components.append(enc_cap)
+                    enc_cap_lat_components.append(enc_cap_lat)
+                    enc_prompt_components.append(enc_prompt)
+                    enc_prompt_lat_components.append(enc_prompt_lat)
+                    
 
     # wire them all up
     btn_generate.click(
@@ -133,8 +139,10 @@ with gr.Blocks() as interface:
             img_lat_components +
             cap_out_components +
             cap_lat_components +
-            enc_out_components +
-            enc_lat_components
+            enc_cap_components +
+            enc_cap_lat_components +
+            enc_prompt_components +
+            enc_prompt_lat_components
         ),
         api_name="generate_and_caption",
     )
