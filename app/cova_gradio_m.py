@@ -24,6 +24,8 @@ app = FastAPI()
 for m in models:
     m["image_url"]   = f'http://{os.environ[m["host_env"]]}:{os.environ[m["port_env"]]}/generate'
     m["caption_url"] = f'http://{os.environ[m["caption_host_env"]]}:{os.environ[m["caption_port_env"]]}/generate'
+    if "encoder_host_env" in m and "encoder_port_env" in m:
+      m["encoder_url"] = f'http://{os.environ[m["encoder_host_env"]]}:{os.environ[m["encoder_port_env"]]}/generate'
 
 async def post_json(client: httpx.AsyncClient, url: str, payload: dict, timeout: float = 60.0):
     start = asyncio.get_event_loop().time()
@@ -48,11 +50,7 @@ async def fetch_end_to_end(
     img_json, img_latency = await post_json(client, model_cfg["image_url"], img_payload)
     image = Image.open(io.BytesIO(base64.b64decode(img_json["image"])))
 
-    # vLLM to describe that image
-    #img_b64 = pil_to_base64(image)
-    #caption_prompt = f"Describe the content of this image (base64 PNG follows): {img_b64}"
-    #cap_payload = {"prompt": caption_prompt,
-    #               "max_new_tokens": model_cfg["caption_max_new_tokens"]}
+    # Generate the caption
     img_b64 = pil_to_base64(image)
     cap_payload = {
        "prompt": "Describe this image",
@@ -61,8 +59,15 @@ async def fetch_end_to_end(
     }
     cap_json, cap_latency = await post_json(client, model_cfg["caption_url"], cap_payload)
     caption = base64.b64decode(cap_json["text"]).decode()
-
-    return image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s"
+    
+    #Generate the embeddings
+    if "encoder_url" in model_cfg:
+       enc_json, enc_latency = await post_json(
+         client, model_cfg["encoder_url"], {"text": caption}
+       )
+       encoded = enc_json.get("encoded", str(enc_json))
+       enc_latency_s = f"{enc_latency:.2f}s"
+    return (image, f"{img_latency:.2f}s", caption, f"{cap_latency:.2f}s",encoded,enc_latency_s,)
 
 async def orchestrate_calls(prompt: str, num_steps: int):
     async with httpx.AsyncClient() as client:
@@ -92,6 +97,8 @@ with gr.Blocks() as interface:
             img_lat_components:  list = []
             cap_out_components:  list = []
             cap_lat_components:  list = []
+            enc_out_components:  list = []
+            enc_lat_components:  list = []
 
             for cfg in models:
                 with gr.Group():
@@ -102,10 +109,15 @@ with gr.Blocks() as interface:
                     lat = gr.Markdown()
                     cap = gr.Markdown()
                     cap_lat = gr.Markdown()
+                    enc = gr.Markdown()
+                    enc_lat = gr.Markdown()
                     img_out_components.append(img)
                     img_lat_components.append(lat)
                     cap_out_components.append(cap)
                     cap_lat_components.append(cap_lat)
+                    enc_out_components.append(enc)
+                    enc_lat_components.append(enc_lat)
+
 
     # wire them all up
     btn_generate.click(
@@ -115,7 +127,9 @@ with gr.Blocks() as interface:
             img_out_components +
             img_lat_components +
             cap_out_components +
-            cap_lat_components
+            cap_lat_components +
+            enc_out_components +
+            enc_lat_components
         ),
         api_name="generate_and_caption",
     )
