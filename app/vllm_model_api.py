@@ -151,10 +151,10 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
       raise HTTPException(status_code=500, detail=f"{e}")
 
 @app.post("/generate", response_model=GenerateResponse)
-def generate_text_post(request: GenerateRequest):
+async def generate_text_post(request: GenerateRequest):
   try:
       with torch.no_grad():
-        response_text,total_time=gentext(request.prompt,request.max_new_tokens)
+        response_text,total_time=await gentext(request.prompt,request.max_new_tokens)
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
       counter_metric=nodepool
