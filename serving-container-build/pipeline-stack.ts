@@ -269,9 +269,9 @@ export class PipelineStack extends Stack {
         repo: GITHUB_REPO.valueAsString,
         branch: GITHUB_BRANCH.valueAsString,
         output: sourceOutput,
-        oauthToken: SecretValue.secretsManager("githubtoken",{jsonField: "token"}),
+        //oauthToken: SecretValue.secretsManager("githubtoken",{jsonField: "token"}),
         trigger: codepipeline_actions.GitHubTrigger.WEBHOOK,
-        //oauthToken: SecretValue.unsafePlainText(GITHUB_OAUTH_TOKEN.valueAsString)
+        oauthToken: SecretValue.unsafePlainText(GITHUB_OAUTH_TOKEN.valueAsString)
       })
       ]
   });

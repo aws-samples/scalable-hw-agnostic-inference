@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-controller
+  template:
+    metadata:
+      labels:
+        app: load-controller
+    spec:
+      serviceAccountName: appsimulator
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: qualtrics-ng
+      containers:
+      - name: kubectl-runner
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - "-exc"
+        - |
+          while true; do
+            for i in $(seq 1 8); do
+              echo "Scaling load-loop to $i replica(s)..."
+              kubectl scale deployment load-loop --replicas=$i
+              sleep 600
+            done
+          done
+

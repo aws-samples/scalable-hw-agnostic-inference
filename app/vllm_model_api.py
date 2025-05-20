@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 import math
 import boto3
@@ -18,6 +19,8 @@ from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
 import yaml
 
+_generate_sem = asyncio.Semaphore(1)
+
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
@@ -35,9 +38,10 @@ with open("/vllm_config.yaml", "r") as file:
 
 login(hf_token, add_to_git_credential=True)
 
-def gentext(prompt,max_new_tokens):
+async def gentext(prompt,max_new_tokens):
   start_time = time.time()
-  outputs = model.generate(prompt,sampling_params)
+  async with _generate_sem:
+    outputs = model.generate(prompt,sampling_params)
   response = outputs[0].outputs[0].text
   total_time =  time.time()-start_time
   return str(response), float(total_time)
@@ -147,10 +151,10 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
       raise HTTPException(status_code=500, detail=f"{e}")
 
 @app.post("/generate", response_model=GenerateResponse)
-def generate_text_post(request: GenerateRequest):
+async def generate_text_post(request: GenerateRequest):
   try:
       with torch.no_grad():
-        response_text,total_time=gentext(request.prompt,request.max_new_tokens)
+        response_text,total_time=await gentext(request.prompt,request.max_new_tokens)
       counter_metric=app_name+'-counter'
       cw_pub_metric(counter_metric,1,'Count')
       counter_metric=nodepool
