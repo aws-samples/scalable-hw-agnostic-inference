@@ -1,0 +1,21 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: nvidia-al2023
+spec:
+  amiSelectorTerms:
+  - alias: al2023@v20250505
+  role: KarpenterNodeRole-qualtrics
+  securityGroupSelectorTerms:
+  - tags:
+      karpenter.sh/discovery: qualtrics
+  subnetSelectorTerms:
+  - tags:
+      karpenter.sh/discovery: qualtrics
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 3000Gi
+        volumeType: gp3
+        encrypted: true
+

@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+data:
+  vllm_config.yaml: |
+    model: "meta-llama/Llama-3.1-8B"
+    tensor_parallel_size: 4
+    max_num_seqs: 32 
+    max_model_len: 16000
+    block_size: 16
+    distributed_executor_backend: mp
+    use_v2_block_manager: True
+    trust_remote_code: True
+    tokenizer_mode: auto
+---

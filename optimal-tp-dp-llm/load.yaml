@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-loop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-loop
+  template:
+    metadata:
+      labels:
+        app: load-loop
+    spec:
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: qualtrics-ng
+      containers:
+      - name: curl-client
+        image: curlimages/curl:latest
+        env:
+        - name: A10G_BS8_TP4 
+          value: a10g-bs8-tp4-1806446118.us-west-2.elb.amazonaws.com
+        - name: A10G_BS16_TP4 
+          value: a10g-bs16-tp4-25465013.us-west-2.elb.amazonaws.com
+        - name: A10G_BS32_TP4 
+          value: a10g-bs32-tp4-2123941918.us-west-2.elb.amazonaws.com
+        - name: INF2_BS8_TP8
+          value: inf2-bs8-tp8-126612765.us-west-2.elb.amazonaws.com 
+        - name: INF2_BS16_TP8
+          value: inf2-bs16-tp8-702228472.us-west-2.elb.amazonaws.com 
+        - name: INF2_BS32_TP8
+          value: inf2-bs32-tp8-2006374748.us-west-2.elb.amazonaws.com 
+        - name: INF2_BS16_TP16
+          value: inf2-bs16-tp16-618891772.us-west-2.elb.amazonaws.com 
+        - name: INF2_BS32_TP16
+          value: inf2-bs32-tp16-891102569.us-west-2.elb.amazonaws.com 
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            send_requests() {
+              target=$1
+              while true; do
+                echo ">> Sending request to $target"
+                response=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://$target/generate \
+                  -H "Content-Type: application/json" \
+                  -d '{
+                        "prompt": "'"$(printf 'hello %.0s' {1..16384})"'",
+                        "max_new_tokens": 512
+                      }')
+                http_code=$(echo "$response" | grep HTTP_STATUS | cut -d':' -f2)
+                body=$(echo "$response" | sed '/HTTP_STATUS/d')
+                echo "[$target] Status: $http_code"
+                echo "[$target] Body: $body"
+                echo "-----"
+                sleep 10
+              done
+            }
+            send_requests "$A10G_BS8_TP4" &
+            send_requests "$A10G_BS16_TP4" &
+            send_requests "$A10G_BS32_TP4" &
+            send_requests "$INF2_BS8_TP8" &
+            send_requests "$INF2_BS16_TP8" &
+            send_requests "$INF2_BS32_TP8" &
+            send_requests "$INF2_BS16_TP16" &
+            send_requests "$INF2_BS32_TP16" &
+
+            wait
+

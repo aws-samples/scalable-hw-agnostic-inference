@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: inf2-bs16-tp8-mml16k-llama-31-8b-vllm
+data:
+  vllm_config.yaml: |
+    model: "meta-llama/Llama-3.1-8B"
+    tensor_parallel_size: 8
+    max_num_seqs: 16
+    max_model_len: 16000
+    block_size: 16
+    distributed_executor_backend: mp
+    override_neuron_config: 
+       skip_warmup: true
+    device: "neuron"
+---

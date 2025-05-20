@@ -1,0 +1,100 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+spec:
+  selector:
+    app: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+    nvidia.com/gpu: "4"
+  name: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+spec:
+  selector:
+    matchLabels:
+      app: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+  template:
+    metadata:
+      labels:
+        app: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+        nvidia.com/gpu: "4"
+    spec:
+      nodeSelector:
+        karpenter.sh/nodepool: nvidia-a10g
+      serviceAccountName: appsimulator
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      containers:
+      - name: app
+        image: 975050117197.dkr.ecr.us-west-2.amazonaws.com/model:amd64-cuda
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /vllm_config.yaml
+            name: vllm-config-volume
+            subPath: vllm_config.yaml
+          - mountPath: /dev/shm
+            name: dshm
+        command: 
+        - /bin/bash
+        - "-exc"
+        - |
+          set -x
+          pip install --upgrade transformers accelerate protobuf sentence_transformers tenacity nvitop
+          pip install torch==2.2.1+cu118 torchvision==0.17.1+cu118 torchaudio==2.2.1 --extra-index-url https://download.pytorch.org/whl/cu118
+          pip install --force-reinstall "triton==2.2.0"
+          pip install vllm
+          cd /
+          uvicorn vllm_model_api:app --host=0.0.0.0
+        resources:
+          requests:
+            nvidia.com/gpu: 4
+          limits:
+            nvidia.com/gpu: 4
+        env:
+        - name: MODEL_ID
+          value: "meta-llama/Llama-3.1-8B"
+        - name: APP
+          value: "a10g-bs32-tp4"
+        - name: NODEPOOL
+          value: "amd-neuron-a10g" 
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HUGGINGFACE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hf-secrets
+              key: HUGGINGFACE_TOKEN
+        - name: MAX_NEW_TOKENS
+          value: "512"
+        ports:
+          - containerPort: 8000
+            protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readiness
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 480
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+      volumes:
+      - name: vllm-config-volume
+        configMap:
+          name: a10g-bs32-tp4-mml16k-llama-31-8b-vllm
+      - name: dshm
+        emptyDir:
+          medium: Memory
