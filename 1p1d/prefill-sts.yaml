@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prefill-headless
+  namespace: default
+spec:
+  selector:
+    app: prefill
+  clusterIP: None
+  ports:
+    - name: placeholder
+      port: 1
+      targetPort: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prefill
+  namespace: default
+spec:
+  serviceName: prefill-headless      
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prefill
+  template:
+    metadata:
+      labels:
+        app: prefill
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: decode
+              topologyKey: kubernetes.io/hostname
+      schedulerName: my-scheduler
+      nodeSelector:
+        karpenter.sh/nodepool: neuron-trn1-efa
+      containers:
+        - name: app
+          image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.7.2-neuronx-py310-sdk2.24.0-ubuntu22.04
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - "-exc"
+            - |
+              set -x
+              apt-get update
+              pip install tenacity
+              export LD_LIBRARY_PATH="/opt/aws/neuron/lib:/opt/amazon/efa/lib:/opt/amazon/efa/lib64:/opt/amazon/openmpi/lib64:/usr/local/lib:${LD_LIBRARY_PATH}"
+              DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                build-essential pciutils tcl environment-modules libnl-3-dev libnl-route-3-dev libnl-genl-3-dev
+              curl -O https://efa-installer.amazonaws.com/aws-efa-installer-latest.tar.gz
+              tar -xzf aws-efa-installer-latest.tar.gz
+              cd aws-efa-installer
+              ./efa_installer.sh -y -g -d --skip-kmod --skip-limit-conf --no-verify
+
+              cp /scripts/download_hf_model.py / && python /download_hf_model.py
+              cp /scripts/server.sh / && chmod +x /server.sh && /server.sh
+              while true; do sleep 3600; done
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: scripts-pvc
+              mountPath: /scripts
+          resources:
+            requests:
+              aws.amazon.com/neuron: 16
+              vpc.amazonaws.com/efa: 8
+            limits:
+              aws.amazon.com/neuron: 16
+              vpc.amazonaws.com/efa: 8
+          env:
+            - name: SEND
+              value: "1"
+            - name: COMPILED_MODEL_ID
+              value: "yahavb/DeepSeek-R1-Distill-Llama-70B-BS1-SL16k-TP32"
+            - name: NEURON_COMPILED_ARTIFACTS
+              value: "/yahavb/DeepSeek-R1-Distill-Llama-70B-BS1-SL16k-TP32"
+            - name: MODEL_ID
+              value: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B"
+            - name: MAX_SEQ_LEN
+              value: "16384"
+            - name: VLLM_BATCH
+              value: "1"
+            - name: TP_DEGREE
+              value: "32"
+            - name: FI_EFA_USE_DEVICE_RDMA
+              value: "1"
+            - name: FI_PROVIDER
+              value: "efa"
+            - name: FI_EFA_FORK_SAFE
+              value: "1"
+            - name: HUGGINGFACE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secrets
+                  key: HUGGINGFACE_TOKEN
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: scripts-pvc
+          persistentVolumeClaim:
+            claimName: scripts-pvc

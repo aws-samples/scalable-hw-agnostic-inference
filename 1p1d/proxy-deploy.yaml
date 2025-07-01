@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxy
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxy
+  template:
+    metadata:
+      labels:
+        app: proxy
+    spec:
+      serviceAccountName: appsimulator
+      schedulerName: my-scheduler
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: mycluster-ng
+      containers:
+        - name: app
+          image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.7.2-neuronx-py310-sdk2.24.0-ubuntu22.04
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - "-exc"
+            - |
+              set -x
+              apt-get update
+              pip install quart httpx boto3
+              cp /scripts/proxy-server.sh / && chmod +x /proxy-server.sh && /proxy-server.sh
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: scripts-pvc
+              mountPath: /scripts
+          env:
+            - name: PREFILL_PORT
+              value: "8100"
+            - name: DECODE_PORT
+              value: "8200"
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: scripts-pvc
+          persistentVolumeClaim:
+            claimName: scripts-pvc

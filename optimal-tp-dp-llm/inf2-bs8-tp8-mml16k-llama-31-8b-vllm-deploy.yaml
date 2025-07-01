@@ -70,6 +70,8 @@ spec:
             aws.amazon.com/neuron: 4
             #memory: 240Gi
         env:
+        - name: STREAM_ENABLED
+          value: "false"
         - name: MODEL_ID
           value: "yahavb/inf2-bs8-tp8-mml16k-llama-31-8b-vllm"
           #value: "meta-llama/Llama-3.1-8B"

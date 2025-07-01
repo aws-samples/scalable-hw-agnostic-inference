@@ -61,6 +61,8 @@ spec:
           limits:
             nvidia.com/gpu: 4
         env:
+        - name: STREAM_ENABLED
+          value: "false"
         - name: MODEL_ID
           value: "meta-llama/Llama-3.1-8B"
         - name: APP

@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mono
+spec:
+  selector:
+    app: mono
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mono
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mono
+  template:
+    metadata:
+      labels:
+        app: mono
+    spec:
+      schedulerName: my-scheduler
+      nodeSelector:
+        karpenter.sh/nodepool: neuron-trn1-efa
+      containers:
+        - name: app
+          image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.7.2-neuronx-py310-sdk2.24.0-ubuntu22.04
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - "-exc"
+            - |
+              set -x
+              apt-get update
+              cp /scripts/download_hf_model.py / && python /download_hf_model.py
+              export NEURON_COMPILED_ARTIFACTS="/$COMPILED_MODEL_ID"
+              python3 -m vllm.entrypoints.openai.api_server \
+                --model "deepseek-ai/DeepSeek-R1-Distill-Llama-70B" \
+                --tensor-parallel-size 32 \
+                --max-num-seqs 8 \
+                --max-model-len 16384 \
+                --block-size 8 \
+                --device neuron \
+                --use-v2-block-manager \
+                --port 8000
+          resources:
+            requests:
+              aws.amazon.com/neuron: 16
+            limits:
+              aws.amazon.com/neuron: 16
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: scripts-pvc
+              mountPath: /scripts
+          env:
+            - name: VLLM_NEURON_FRAMEWORK
+              value: "neuronx-distributed-inference"
+            - name: COMPILED_MODEL_ID
+              value: "yahavb/DeepSeek-R1-Distill-Llama-70B-BS8-SL16k-TP32"
+            - name: HUGGINGFACE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secrets
+                  key: HUGGINGFACE_TOKEN
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: scripts-pvc
+          persistentVolumeClaim:
+            claimName: scripts-pvc

@@ -6,8 +6,6 @@ import time
 import argparse
 import torch
 import torch.nn as nn
-#import torch_neuronx
-#import neuronx_distributed
 import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -15,36 +13,75 @@ from typing import Any, Dict, Optional, Union
 from huggingface_hub import login
 from starlette.responses import StreamingResponse
 import base64
-from vllm import LLM, SamplingParams
+from vllm import LLM,SamplingParams
+from vllm.engine.async_llm_engine import AsyncLLMEngine, AsyncEngineArgs
+#from vllm import LLM
 from sentence_transformers import SentenceTransformer
 import yaml
+import copy
+from itertools import count
 
 _generate_sem = asyncio.Semaphore(1)
-
+_req_ctr = count(1)
 cw_namespace='hw-agnostic-infer'
 default_max_new_tokens=50
 cloudwatch = boto3.client('cloudwatch', region_name='us-west-2')
-sampling_params = SamplingParams(temperature=0.7,top_k=50,top_p=0.9,max_tokens=128,)
 
 app_name=os.environ['APP']
 nodepool=os.environ['NODEPOOL']
 pod_name = os.environ['POD_NAME']
 hf_token = os.environ['HUGGINGFACE_TOKEN'].strip()
 repo_id=os.environ['MODEL_ID']
+stream_enabled = os.environ["STREAM_ENABLED"].lower() == "true"
 os.environ['NEURON_COMPILED_ARTIFACTS']=repo_id
+
 
 with open("/vllm_config.yaml", "r") as file:
   vllm_config=yaml.safe_load(file)
-
+  for bad in ("show_progress", "disable_log_stats", "use_tqdm"): 
+    vllm_config.pop(bad, None)
 login(hf_token, add_to_git_credential=True)
 
-async def gentext(prompt,max_new_tokens):
-  start_time = time.time()
-  async with _generate_sem:
-    outputs = model.generate(prompt,sampling_params)
-  response = outputs[0].outputs[0].text
-  total_time =  time.time()-start_time
-  return str(response), float(total_time)
+base_params = SamplingParams(
+    temperature=0.7,
+    top_k=50,
+    top_p=0.9,
+    max_tokens=default_max_new_tokens,
+)
+base_params.stream = stream_enabled 
+base_params.stream_chunk_size = 8
+
+async def gentext(prompt: str, max_new_tokens: int):
+    params = copy.copy(base_params)
+    params.max_tokens = max_new_tokens
+    params.stream = stream_enabled          # True → stream, False → batch
+
+    start  = time.time()
+    ttft   = None
+    text   = ""
+
+    params.stream = False
+
+    if stream_enabled:
+      #params.stream = True
+      req_id = f"r{next(_req_ctr)}"
+      async for out in model.generate(prompt, params, req_id):
+        chunk = out.outputs[0].text
+        if ttft is None and chunk:          # first token
+            ttft = time.time() - start
+        text += chunk
+    else:
+      async with _generate_sem:
+        outputs = await asyncio.to_thread(model.generate,prompt,params)      
+      #print(f"DEBUG: in gentext under batch; outputs:{outputs}")
+      text=outputs[0].outputs[0].text
+      first=outputs[0]
+      metrics = getattr(first, "metrics", None)
+      if metrics and getattr(metrics, "first_token_time", None):
+        ttft = (metrics.first_token_time - metrics.arrival_time) * 1_000
+      else:
+        ttft = (time.time() - start) * 1_000        
+    return text, ttft, time.time() - start
 
 def cw_pub_metric(metric_name,metric_value,metric_unit):
   response = cloudwatch.put_metric_data(
@@ -57,18 +94,19 @@ def cw_pub_metric(metric_name,metric_value,metric_unit):
        },
     ]
   )
-  print(f"in pub_deployment_counter - response:{response}")
+  print(f"DEBUG: in pub_deployment_counter - metric_name:{metric_name}; metric_value:{metric_value}; metric_unit:{metric_unit};response:{response}")
   return response
 
 login(hf_token, add_to_git_credential=True)
 
-def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
-    warmup_run = model.generate(prompt,sampling_params)
+async def benchmark(n_runs, test_name,model,prompt,max_new_tokens):
+    response_text,ttft,total_time=await gentext(prompt,max_new_tokens)
     latency_collector = LatencyCollector()
 
     for _ in range(n_runs):
         latency_collector.pre_hook()
-        res = model.generate(prompt,sampling_params)
+        response_text,ttft,total_time=await gentext(prompt,max_new_tokens)
+        #print(f"DEBUG: in benchmark:response_text to {prompt} is:{response_text}; ttft is {ttft}; and total_time is {total_time}")
         latency_collector.hook()
 
     p0_latency_ms = latency_collector.percentile(0) * 1000
@@ -129,21 +167,25 @@ class GenerateBenchmarkResponse(BaseModel):
     report: str = Field(..., description="Benchmark report")
 
 def load_model():
-  model = LLM(**vllm_config)
-  return model
+    if stream_enabled:                    
+        ea = AsyncEngineArgs(**vllm_config)
+        return AsyncLLMEngine.from_engine_args(ea)
+    else:                                
+        return LLM(**vllm_config)
 
 model = load_model()
-prompt= "What model are you?"
-benchmark(10,"warmup",model,prompt,default_max_new_tokens)
 app = FastAPI()
 
+@app.on_event("startup")
+async def _warmup():
+  await benchmark(10,"warmup",model,"What model are you?",default_max_new_tokens)
+
 @app.post("/benchmark",response_model=GenerateBenchmarkResponse) 
-def generate_benchmark_report(request: GenerateBenchmarkRequest):
-  print(f'DEBUG: GenerateBenchmarkRequest:{request}')
+async def generate_benchmark_report(request: GenerateBenchmarkRequest):
   try:
       with torch.no_grad():
         test_name=f'benchmark:{app_name} on {nodepool} with {request.max_new_tokens} output tokens'
-        response_report=benchmark(request.n_runs,test_name,model,request.prompt,request.max_new_tokens)
+        response_report=await benchmark(request.n_runs,test_name,model,request.prompt,request.max_new_tokens)
         report_base64 = base64.b64encode(response_report.encode()).decode()
       return GenerateBenchmarkResponse(report=report_base64)
   except Exception as e:
@@ -154,13 +196,16 @@ def generate_benchmark_report(request: GenerateBenchmarkRequest):
 async def generate_text_post(request: GenerateRequest):
   try:
       with torch.no_grad():
-        response_text,total_time=await gentext(request.prompt,request.max_new_tokens)
+        response_text,ttft,total_time=await gentext(request.prompt,request.max_new_tokens)
       counter_metric=app_name+'-counter'
-      cw_pub_metric(counter_metric,1,'Count')
+      await asyncio.to_thread(cw_pub_metric,counter_metric,1,'Count')
       counter_metric=nodepool
-      cw_pub_metric(counter_metric,1,'Count')
+      await asyncio.to_thread(cw_pub_metric,counter_metric,1,'Count')
       latency_metric=app_name+'-latency'
-      cw_pub_metric(latency_metric,total_time,'Seconds')
+      await asyncio.to_thread(cw_pub_metric,latency_metric,total_time,'Seconds')
+      if ttft is not None:
+        ttft_metric=app_name+'-ttft'
+        await asyncio.to_thread(cw_pub_metric,ttft_metric,total_time,'Milliseconds')
       text_base64 = base64.b64encode(response_text.encode()).decode()
       return GenerateResponse(text=text_base64, execution_time=total_time)
   except Exception as e:

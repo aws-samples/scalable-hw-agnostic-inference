@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-1p1d
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-1p1d
+  template:
+    metadata:
+      labels:
+        app: load-1p1d
+    spec:
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: mycluster-ng
+      containers:
+        - name: app
+          image: public.ecr.aws/neuron/pytorch-inference-vllm-neuronx:0.7.2-neuronx-py310-sdk2.24.0-ubuntu22.04
+          imagePullPolicy: Always
+          command:
+            - /bin/bash
+            - "-exc"
+            - |
+              set -x
+              apt-get update
+              cp /scripts/measure_and_publish.py / && python /measure_and_publish.py 
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: scripts-pvc
+              mountPath: /scripts
+          env:
+            - name: SVC_PREFIX
+              value: "proxy"
+            - name: CW_NAMESPACE
+              value: "DI/1p1d"
+            - name: PROMPT_COUNT
+              value: "hello"
+            - name: REGION
+              value: "us-west-2"
+            - name: PROMPT_WORD
+              value: "hello"
+            - name: PROMPT_COUNT
+              value: "16304"
+            - name: SLEEP_INTERVAL
+              value: "10"
+            - name: CONCURRENCY
+              value: "6"
+            - name: HUGGINGFACE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hf-secrets
+                  key: HUGGINGFACE_TOKEN
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: scripts-pvc
+          persistentVolumeClaim:
+            claimName: scripts-pvc

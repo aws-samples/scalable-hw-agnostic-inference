@@ -1,0 +1,35 @@
+apiVersion: karpenter.k8s.aws/v1
+kind: EC2NodeClass
+metadata:
+  name: neuron-al2023-efa
+spec:
+  amiSelectorTerms:
+  - alias: al2023@v20250505
+  userData: |
+    #!/bin/bash
+    set -eux
+    cloud-init-per once yum_wget yum install -y wget
+    cloud-init-per once wget_efa wget -q --timeout=20 https://s3-us-west-2.amazonaws.com/aws-efa-installer/aws-efa-installer-latest.tar.gz -O /tmp/aws-efa-installer-latest.tar.gz
+     cloud-init-per once tar_efa tar -xf /tmp/aws-efa-installer-latest.tar.gz -C /tmp
+     pushd /tmp/aws-efa-installer
+     cloud-init-per once install_efa ./efa_installer.sh -y -g
+     pop /tmp/aws-efa-installer
+     cloud-init-per once efa_info /opt/amazon/efa/bin/fi_info -p efa
+  role: KarpenterNodeRole-qualtrics
+  #needed for efa
+  associatePublicIPAddress: false
+  securityGroupSelectorTerms:
+  - tags:
+      karpenter.sh/discovery: mycluster
+  subnetSelectorTerms:
+  - tags:
+      #needed for efa
+      kubernetes.io/role/internal-elb: "1"
+      karpenter.sh/discovery: mycluster
+  blockDeviceMappings:
+    - deviceName: /dev/xvda
+      ebs:
+        volumeSize: 3000Gi
+        volumeType: gp3
+        encrypted: true
+
